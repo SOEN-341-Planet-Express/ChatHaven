@@ -1,42 +1,72 @@
-Meeting #
+Meeting # 1
 
 Meeting Title: Getting Started
 Date: 26 January, 2025
 Time: 7:30 pm
 
 Attendees:
-- Zachary Cohen 40200376
+- Zachary Cohen 40200376 (Scrum Master)
 - Yenita Aman 40293370
 - Paria Jafarian 40248494
 - Ulysse Allard 40252823
 - Elliot Vinet 40210063
-- Alexander ??
+- Alexander 40167836 (Secretary)
 
 Absentees: None
 
-
-
 Agenda:
-- 
-- 
-- 
+- Set up GitHub repository and organize files.
+- Define roles and responsibilities.
+- Choose tools and technologies for the project.
 
 Topics Discussed
+- GitHub Setup
+ * WE created and organize the GitHub repository with different folders for each sprint.
+ * GitHub Desktop will be used for convenience.
+ * Repository will be configured for autonomous code reviews.
 
+- Communication/ Documentation
+* Google Meet will be used for meeting notes and discussions.
+* We need to confirm tagging processes with the TA.
 
+* Ulysse is setting up JIRA for project management.
+* All members have been added to the JIRA workspace.
 
-- 
--
--
+- Uncertainty
+* Ask guidance from the TA on Sprints organization and Criteria.
+* Members will explore strategies for structuring sprints.
+
+Spoke about tools and stack selection, considering team expertise.
 
 Descisions made: 
 
-Next Steps:
+Weekly Scrum meetings will take place on:
+Tuesday: 12:00 PM – 1:00 PM
+Friday: 5:00 PM – 5:45 PM
 
--
+Visual Studio Code and GitHub Desktop are the primary tools.
+JIRA will be used for sprint and task management.
+
+
+Next Steps:
+Henny:
+Send out learning References
+
+Everyone:
+Research tools and stacks to finalize choices in the next meeting.
+Ramp up to Web development tools and twchniques
+
+Ulysse:
+Complete JIRA setup and provide a walkthrough for the team.
+
+Zachary:
+Confirm meeting documentation processes with the TA.
+
+Alexander: 
+Set up Google Meets for next meeting using AI note taker.
 
 Next meeting:
  
-- Time
-- Date
-- Location
+- Time: Tuesday: 12:00 PM – 1:00 PM 
+- Date: Feb 4th 2025
+- Location: Online Google Meets
