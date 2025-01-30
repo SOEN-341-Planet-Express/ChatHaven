@@ -1,0 +1,49 @@
+Meeting # 1
+
+Meeting Title: Getting Started
+Date: 26 January, 2025
+Time: 7:30 pm
+
+Attendees:
+- Zachary Cohen 40200376 (Scrum Master)
+- Yenita Aman 40293370
+- Paria Jafarian 40248494
+- Ulysse Allard 40252823
+- Elliot Vinet 40210063
+- Alexander 40167836 (Secretary)
+
+Absentees: None
+
+Sprint Planning and Action Items
+
+Team plans to separate tasks and create requirements before next week's login page completion 04:18
+Team needs to create requirements document, put tasks in Github, and work on Readme file 04:53
+Deliverables for upcoming Friday include Github setup, Readme, sprint plan, user stories, and code demo 08:02
+Alexander to manage Github tasks: create authorization and organize user stories for sprint one 19:02
+Team reminded to create tests to validate user stories after task completion 20:23
+
+
+Development Approach
+
+Team considering using React for front-end development 26:53
+Team advised to agree on consistent CSS styling throughout project 27:26
+
+
+Collaboration Strategy
+
+Team will collaborate on Google Docs to develop user stories and tasks 24:37
+
+
+Manual notes
+we have to create user stories 05:00
+@ulysse says Jira not worth it 07:14
+How do we represent user stories on github? 16:17
+create readme (henny) create authorization (ulysse) create user storys and add them to github (alex ) 21:37
+@paria @elliot @alex create users and post to google docs 25:35
+@alex will create the space on github whee the user stories will get posted 25:54
+@alex make everyone admin on discord 26:16
+
+
+Next meeting:
+
+Friday 5:00PM
