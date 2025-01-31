@@ -79,11 +79,11 @@ http://localhost:3000
 ## User Guide
 - To access admin login: 
     - Email: john.doe@email.com
-    - passord: admin1234
+    - password: admin1234
 
 - To access member login: 
     - Email: jane.doe@email.com
-    - passord: member1234
+    - password: member1234
 ## Roles for Sprint 1
 - Scrum Master: Yénita Aman
 - Secretary: Alexandre Raymond
