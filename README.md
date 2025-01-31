@@ -16,7 +16,7 @@ Our project, ChatHaven, addresses these issues by providing a simple and user-fr
 - [Features](#features)
 - [Technologies used](#technologies-used)
 - [Deployment](#deployment)
-- [User guide](#usage-guide)
+- [User guide](#user-guide)
 - [Roles for Sprint 1](#roles-for-sprint-1)
 - [Roles for Sprint 2](#roles-for-sprint-2)
 - [Roles for Sprint 3](#roles-for-sprint-3)
