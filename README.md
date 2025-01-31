@@ -33,7 +33,7 @@ Our project, ChatHaven, addresses these issues by providing a simple and user-fr
 - Other tools: XAMPP, GitHub
 ## Deployment
 ### 1. Prerequisites:
-Install [VS Code](#https://code.visualstudio.com/), [Node.js](#https://nodejs.org/en) and [XAMPP](https://www.apachefriends.org/). Make sure that both Apache and MySQL servers are running.
+Install [VS Code](https://code.visualstudio.com/), [Node.js](https://nodejs.org/en) and [XAMPP](https://www.apachefriends.org/). Make sure that both Apache and MySQL servers are running.
 ### 2. Cloning Repository:
 Open **VS Code**, then open the terminal (`Ctrl + ~` or **View > Terminal**).  
 Run the following command to clone the repository:  
