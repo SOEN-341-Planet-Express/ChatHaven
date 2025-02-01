@@ -1,20 +1,35 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // page Redirection
 import '../App.css';
-import { Link } from "react-router-dom";
 
 function Signup() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-   
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
 
-    alert("Account Created");
+    const response = await fetch("http://localhost:5001/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert("Account Created!");
+      navigate("/Home"); // go home
+    } else {
+      alert(data.message); //errors
+    }
   };
 
   return (
@@ -47,16 +62,10 @@ function Signup() {
             required
           />
 
-          <button type="submit">
-            Sign Up
-          </button>
-
+          <button type="submit">Sign Up</button>
         </form>
 
-        <Link to="/Home">
-         <button>Login</button>
-        </Link>
-
+        <button onClick={() => navigate("/Home")}>Login</button>
       </header>
     </div>
   );
