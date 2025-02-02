@@ -2,7 +2,7 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 
-const PORT = 5001; // port 5000 had a service running
+const PORT = 5001; 
 
 const app = express();
 app.use(express.json());
@@ -10,10 +10,12 @@ app.use(cors());
 
 // Connection
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "password",  
+  host: "srvd12ed324fsd5t34r34.mysql.database.azure.com",
+  user: "rtdsfasdf23r2eddva32",
+  password: "kPnWV7@@m%",  
   database: "chathaven_DB",
+  port: 3306,
+  ssl: { rejectUnauthorized: true },
 });
 
 db.connect(err => {
@@ -60,4 +62,4 @@ app.post("/login", (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
