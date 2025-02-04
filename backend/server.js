@@ -61,5 +61,23 @@ app.post("/login", (req, res) => {
   });
 });
 
+// Forgot Password
+
+app.post("/forgotpassword", (req, res) => {
+  const { username, password } = req.body;
+
+  const mysql = "UPDATE users SET password = ? WHERE username = ?";
+  db.query(mysql, [password, username], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    
+    if (results.affectedRows === 0) return res.status(401).json({ message: "Invalid username entry :/"});
+
+    
+
+    res.status(200).json({ message: "Password changed successfully!"})
+  });
+});
+
+
 // Start Server
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
