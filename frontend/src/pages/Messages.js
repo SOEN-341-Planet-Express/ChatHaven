@@ -1,7 +1,15 @@
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
 function Messages() {
   const navigate = useNavigate()
+  const [loggedInUser, setLoggedInUser]= useState("")
+
+  useEffect(() => {
+    const user = localStorage.getItem("loggedInUser"); // retrieves logged in user from the  /home to know which user signed in
+      setLoggedInUser(user); // Set the username in the state.
+  }, [navigate])
+  
 
   const createChannel = async (e) => {
     e.preventDefault()
@@ -37,13 +45,17 @@ function Messages() {
             <h1 className="text-3xl font-bold">ChatHaven</h1>
           </div>
           <button
-            onClick={() => navigate("/home")}
+            onClick={() => {
+              localStorage.removeItem("loggedInUser")
+              navigate("/home")}}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
           >
             Logout
           </button>
         </div>
-
+        <div>
+        <h1>Welcome, {loggedInUser}</h1>
+        </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4">
             <h2 className="text-xl font-semibold mb-4">Channels

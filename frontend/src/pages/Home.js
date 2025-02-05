@@ -18,6 +18,7 @@ function Home() {
     const data = await response.json()
 
     if (response.ok) {
+      localStorage.setItem("loggedInUser", username)
       navigate("/Messages")
     } else {
       alert(data.message)
