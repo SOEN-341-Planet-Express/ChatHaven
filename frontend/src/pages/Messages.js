@@ -125,36 +125,59 @@ function Messages() {
           </button>
         </div>
         <div>
-        <h1>Welcome, {loggedInUser}</h1>
+        <h1 className = "text-l font-semibold">Welcome {loggedInUser}</h1>
         </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4">
             <h2 className="text-xl font-semibold mb-4">Channels
-              {/* admin buttons*/}
-              {/* the create channel button should prompt the admin to enter a name and pass that value to the createChannel function*/}
-              <button onClick={createChannel}>Create</button>
-              {/* the delete channel button should pass the currently selected channel's name to the deleteChannel function*/}
-              <button onClick={deleteChannel}>Delete</button>
             </h2>
-            
-            <ul className="space-y-2">
+              {/* admin buttons */}
+            <h3 className="flex justify-between mb-4">
+              {/* the create channel button should prompt the admin to enter a name and pass that value to the createChannel function*/}
+              <button onClick={createChannel}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
+                >
+                Create</button>
+              {/* the delete channel button should pass the currently selected channel's name to the deleteChannel function*/}
+              <button onClick={deleteChannel}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
+              >
+              Delete</button>
+            </h3>
+             {/* channel buttons*/}
+             
+            <ul className="space-y-2 mb-4">
               <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
                 group1
               </li>
               <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
                 group2
               </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200 ">
                 group3
+              </li>
+            </ul>
+            <h4 className="text-xl font-semibold mb-2">Private</h4> 
+            <ul className="space-y-2">
+              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+                Jonny
+              </li>
+              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+                Claire
+              </li>
+              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+                Alexi
               </li>
             </ul>
           </div>
 
           <div className="w-3/4 p-4">
-            <h2 className="text-xl font-semibold mb-4">Messages
+            <h2 className="flex justify-between text-xl font-semibold mb-4">Messages
             {/* admin buttons*/}
             {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
-            <button onClick={assignUsers}>Assign User</button>
+            <button onClick={assignUsers} className = "bg-blue-700 hover:bg-blue-800 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
+              >Assign New Users
+              </button>
             {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
             <button onClick={removeUsers}>Remove User</button>
             </h2>
