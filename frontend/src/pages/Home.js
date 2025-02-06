@@ -18,6 +18,7 @@ function Home() {
     const data = await response.json()
 
     if (response.ok) {
+      localStorage.setItem("loggedInUser", username)
       navigate("/Messages")
     } else {
       alert(data.message)
@@ -86,6 +87,15 @@ function Home() {
             className="text-gray-400 hover:text-white transition duration-200"
           >
             Don't have an account? Sign up
+          </button>
+        </div>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => navigate("/ForgotPassword")}
+            className="text-gray-400 hover:text-white transition duration-200"
+          >
+            Forgot Password?
           </button>
         </div>
       </div>
