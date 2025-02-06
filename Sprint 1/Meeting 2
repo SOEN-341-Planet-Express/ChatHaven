@@ -1,6 +1,6 @@
-Meeting # 1
+Meeting # 2
 
-Meeting Title: Getting Started
+Meeting Title: Getting the Ball Rolling
 Date: 29 January, 2025
 Time: 9:30 pm
 
@@ -14,36 +14,34 @@ Attendees:
 
 Absentees: None
 
-Sprint Planning and Action Items
+Agenda:
+- Sprint Planning
+- Task speration
+- Stack
 
-Team plans to separate tasks and create requirements before next week's login page completion 04:18
-Team needs to create requirements document, put tasks in Github, and work on Readme file 04:53
-Deliverables for upcoming Friday include Github setup, Readme, sprint plan, user stories, and code demo 08:02
-Alexander to manage Github tasks: create authorization and organize user stories for sprint one 19:02
-Team reminded to create tests to validate user stories after task completion 20:23
+Topics Discussed:
+- Create requirements before login page completion.
+- How do we add US and tasks to GitHub 
+- How to organize our github permissions
+- Update the ReadMe file
+- Considering React for front-end development
+- Consistent CSS styling across the project.
+
+Descisions made: 
+- Using react for front-end development 
+- We will collaborate on Google Docs to develop user stories before creating on Github
+- We will not use Jira for project planning
+
+Next Steps:
+- Alexander to figure out Github authorization and organize user stories.
+- Henny to create readme 
+- Zachary to verify Readme
+- Ulysse to create code validation approval flow.
+- Alexander, Elliot and Paria to create user storys and add them to github 
 
 
-Development Approach
-
-Team considering using React for front-end development 26:53
-Team advised to agree on consistent CSS styling throughout project 27:26
-
-
-Collaboration Strategy
-
-Team will collaborate on Google Docs to develop user stories and tasks 24:37
-
-
-Manual notes
-we have to create user stories 05:00
-@ulysse says Jira not worth it 07:14
-How do we represent user stories on github? 16:17
-create readme (henny) create authorization (ulysse) create user storys and add them to github (alex ) 21:37
-@paria @elliot @alex create users and post to google docs 25:35
-@alex will create the space on github whee the user stories will get posted 25:54
-@alex make everyone admin on discord 26:16
-
+Meeting Adjourned by: Zachary
+Time: 10:38PM
 
 Next meeting:
-
-Friday 5:00PM
+Wednesday Feb 5th 8:00PM
