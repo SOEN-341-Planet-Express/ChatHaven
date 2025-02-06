@@ -5,17 +5,88 @@ function Messages() {
 
   const createChannel = async (e) => {
     e.preventDefault()
-    //dummy function
+    //this is a placeholder value that needs to be substituted by a user inputed value when we merge the backend and frontend
+    const channelName = "placeholder"
+    
+    const response = await fetch("http://localhost:5001/createChannel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelName }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      alert("Channel Created!")
+    } else {
+      alert(data.message)
+    }
   }
 
   const deleteChannel = async (e) => {
     e.preventDefault()
-    //dummy function
+    //this is a placeholder value that needs to be substituted by the name of the selected channel upon clicking delete
+    const channelName = "placeholder"
+    
+    const response = await fetch("http://localhost:5001/deleteChannel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channelName }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      alert("Channel Deleted!")
+    } else {
+      alert(data.message)
+    }
   }
 
   const assignUsers = async (e) => {
     e.preventDefault()
-    //dummy function
+
+    //username should be the username the admin selected
+    const username = "johnsmith"
+    //channelName should be the name of the currently selected channel
+    const channelName = "placeholder"
+    
+    const response = await fetch("http://localhost:5001/assignUsers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, channelName }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      alert("User assigned to channel!")
+    } else {
+      alert(data.message)
+    }
+  }
+
+  const removeUsers = async (e) => {
+    e.preventDefault()
+
+    //username should be the username the admin selected
+    const username = "johnsmith"
+    //channelName should be the name of the currently selected channel
+    const channelName = "placeholder"
+    
+    const response = await fetch("http://localhost:5001/removeUsers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, channelName }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      alert("User removed from channel!")
+    } else {
+      alert(data.message)
+    }
   }
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
@@ -48,7 +119,9 @@ function Messages() {
           <div className="w-1/4 bg-gray-700 p-4">
             <h2 className="text-xl font-semibold mb-4">Channels
               {/* admin buttons*/}
+              {/* the create channel button should prompt the admin to enter a name and pass that value to the createChannel function*/}
               <button onClick={createChannel}>Create</button>
+              {/* the delete channel button should pass the currently selected channel's name to the deleteChannel function*/}
               <button onClick={deleteChannel}>Delete</button>
             </h2>
             
@@ -68,7 +141,10 @@ function Messages() {
           <div className="w-3/4 p-4">
             <h2 className="text-xl font-semibold mb-4">Messages
             {/* admin buttons*/}
-            <button onClick={assignUsers}>Assign Users</button>
+            {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
+            <button onClick={assignUsers}>Assign User</button>
+            {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
+            <button onClick={removeUsers}>Remove User</button>
             </h2>
             <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
               <div className="space-y-4">
