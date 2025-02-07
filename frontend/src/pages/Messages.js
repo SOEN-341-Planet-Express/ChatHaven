@@ -73,13 +73,14 @@ function Messages() {
   const deleteChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return alert("Please enter a channel name.");
+    if (!channelList.includes(channelName)) return alert("Channel does not exist."); // <- Added check
     
     const response = await fetch("http://localhost:5001/deleteChannel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channelName }),
     });
-    
+  
     const data = await response.json();
     if (response.ok) {
       alert("Channel Deleted!");
@@ -90,7 +91,6 @@ function Messages() {
       alert(data.message);
     }
   };
-
 
   const assignUsers = async (e) => {
     e.preventDefault()
