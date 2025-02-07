@@ -1,13 +1,52 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import React from 'react';
 
 function Messages() {
   const navigate = useNavigate()
   const [loggedInUser, setLoggedInUser]= useState("")
+  const [isAdmin, setIsAdmin ]= useState("");
+  const [channelList, setChannelList] = useState('');
 
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser"); // retrieves logged in user from the  /home to know which user signed in
       setLoggedInUser(user); // Set the username in the state.
+
+      async function checkAdmin(){
+        const response = await fetch("http://localhost:5001/checkAdmin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user }),
+        })
+        
+        const data = await response.json()
+    
+        if (response.ok) {
+          setIsAdmin(data.message)
+        } else {
+          alert(data.message)
+        }
+      }
+
+      async function getChannels(){
+        const response = await fetch("http://localhost:5001/getChannels", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user }),
+        })
+        
+        const data = await response.json()
+    
+        if (response.ok) {
+          setChannelList(data.message)
+          
+        } else {
+          alert(data.message)
+        }
+      }
+
+      checkAdmin();
+      getChannels();
   }, [navigate])
   
 
@@ -96,6 +135,18 @@ function Messages() {
       alert(data.message)
     }
   }
+
+  function listOutChannels(items) {
+    const listItems = []
+    for (let i = 0; i < items.length; i++) {
+      listItems.push(<li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200" key={i}>{items[i]}</li>)
+    }
+  
+    return listItems
+  }
+  
+  
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
       <div className="container mx-auto px-4 py-8">
@@ -134,28 +185,22 @@ function Messages() {
               {/* admin buttons */}
             <h3 className="flex justify-between mb-4">
               {/* the create channel button should prompt the admin to enter a name and pass that value to the createChannel function*/}
+              {isAdmin=="true" &&
               <button onClick={createChannel}
             className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
                 >
-                Create</button>
+                Create</button>}
               {/* the delete channel button should pass the currently selected channel's name to the deleteChannel function*/}
+              {isAdmin=="true" &&
               <button onClick={deleteChannel}
               className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
               >
-              Delete</button>
+              Delete</button>}
             </h3>
              {/* channel buttons*/}
              
             <ul className="space-y-2 mb-4">
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                group1
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                group2
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200 ">
-                group3
-              </li>
+            {listOutChannels(channelList)}
             </ul>
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
             <ul className="space-y-2">
@@ -172,14 +217,17 @@ function Messages() {
           </div>
 
           <div className="w-3/4 p-4">
+          
             <h2 className="flex justify-between text-xl font-semibold mb-4">Messages
             {/* admin buttons*/}
             {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
+            {isAdmin=="true" &&
             <button onClick={assignUsers} className = "bg-blue-700 hover:bg-blue-800 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
               >Assign New Users
-              </button>
+              </button>}
             {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
-            <button onClick={removeUsers}>Remove User</button>
+            {isAdmin=="true" &&
+            <button onClick={removeUsers}>Remove User</button>}
             </h2>
             <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
               <div className="space-y-4">

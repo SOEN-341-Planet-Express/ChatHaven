@@ -37,8 +37,8 @@ app.post("/register", (req, res) => {
     }
 
     // Insert user if username does not exist
-    const insertUserSQL = "INSERT INTO users (username, password) VALUES (?, ?)";
-    db.query(insertUserSQL, [username, password], (err, result) => {
+    const insertUserSQL = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
+    db.query(insertUserSQL, [username, password, "member"], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
       res.status(201).json({ message: "Account Created" });
     });
@@ -49,7 +49,7 @@ app.post("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  const sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+  const sql = "SELECT username, password FROM users WHERE username = ? AND password = ?";
   db.query(sql, [username, password], (err, results) => {
     if (err) return res.status(500).json({ error: "DB error" });
 
@@ -141,7 +141,7 @@ app.post("/assignUsers", (req, res) => {
 
   
   const insertToUserListSQL = "INSERT INTO ?? (users) VALUES (?)";
-  console.log(username, channelName, userList)
+  
     db.query(insertToUserListSQL, [userList, username], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
       res.status(201).json({ message: "User added to channel" });
@@ -155,12 +155,42 @@ app.post("/removeUsers", (req, res) => {
   const userList = channelName+"_user_list"
   
   const removeFromUserListSQL = "DELETE FROM ?? WHERE users=?";
-  console.log(username, channelName, userList)
+  
     db.query(removeFromUserListSQL, [userList, username], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
       res.status(201).json({ message: "User removed from channel" });
     });
   
+});
+
+//Check if user is admin
+app.post("/checkAdmin", (req, res) => {
+  const {user}  = req.body;
+  
+  const checkAdminSQL = "SELECT role FROM users WHERE username=?";
+    db.query(checkAdminSQL, [user], (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
+      const role = result[0].role;
+      if(role=="admin")
+        res.status(201).json({ message: "true" });
+      else{res.status(201).json({ message: "false" });}
+    });
+  
+});
+
+//Get list of channels to display
+app.post("/getChannels", (req, res) => {
+  
+  const mysql = "SELECT * FROM channels";
+  db.query(mysql, [], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    const list = []
+    for(let i = 0; i < results.length; i++){
+      list[i] = results[i].channel_name
+    }
+    res.status(201).json({ message:list });
+  });
 });
 
 // Forgot Password
@@ -179,6 +209,8 @@ app.post("/forgotpassword", (req, res) => {
     res.status(200).json({ message: "Password changed successfully!"})
   });
 });
+
+
 
 
 
