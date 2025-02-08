@@ -9,7 +9,10 @@ function Messages() {
   const [channelList, setChannelList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAssignUser, setShowAssignUser] = useState(false);
+  const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
+  const [username, setUsername] = useState("")
 
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
@@ -94,12 +97,6 @@ function Messages() {
 
   const assignUsers = async (e) => {
     e.preventDefault()
-
-    //username should be the username the admin selected
-    const username = "johnsmith"
-    //channelName should be the name of the currently selected channel
-    const channelName = "placeholder"
-    
     const response = await fetch("http://localhost:5001/assignUsers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -110,6 +107,7 @@ function Messages() {
 
     if (response.ok) {
       alert("User assigned to channel!")
+      setShowAssignUser(false)
     } else {
       alert(data.message)
     }
@@ -117,11 +115,6 @@ function Messages() {
 
   const removeUsers = async (e) => {
     e.preventDefault()
-
-    //username should be the username the admin selected
-    const username = "johnsmith"
-    //channelName should be the name of the currently selected channel
-    const channelName = "placeholder"
     
     const response = await fetch("http://localhost:5001/removeUsers", {
       method: "POST",
@@ -133,6 +126,7 @@ function Messages() {
 
     if (response.ok) {
       alert("User removed from channel!")
+      setShowRemoveUser(false)
     } else {
       alert(data.message)
     }
@@ -166,12 +160,12 @@ function Messages() {
             <h1 className="text-3xl font-bold">ChatHaven</h1>
           </div>
           <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
+            className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
             Logout
           </button>
         </div>
         <div>
-        <h1 className = "text-l font-semibold">Welcome {loggedInUser}</h1>
+        <h1 className = "text-l font-semibold py-2 px-4 font-size-30">Welcome {loggedInUser}</h1>
         </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4 flex flex-col h-full">
@@ -179,8 +173,8 @@ function Messages() {
             
             {isAdmin === "true" && (
               <div className="flex justify-between mb-4">
-                <button onClick={() => setShowCreateModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
-                <button onClick={() => setShowDeleteModal(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
+                <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
+                <button onClick={() => setShowDeleteModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
             <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
@@ -211,12 +205,12 @@ function Messages() {
           {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
           {isAdmin=="true" &&
 
-          <button onClick={assignUsers} className = "bg-blue-700 hover:bg-blue-800 text-white font-semibold py-1 px-1 rounded-lg transition duration-200 transform hover:scale-105"
+          <button onClick={() =>setShowAssignUser(true)} className = "bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
             >Assign New Users
             </button>}
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
-          <button onClick={removeUsers}>Remove User</button>}
+          <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
 
           </h2>
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
@@ -265,6 +259,34 @@ function Messages() {
             <div className="mt-4 flex justify-between">
               <button onClick={deleteChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
               <button onClick={() => setShowDeleteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAssignUser && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter Channel Name</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="To Channel" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" /><p></p>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="User to add" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={assignUsers} className="bg-green-600 px-4 py-2 rounded-lg">Add</button>
+              <button onClick={() => setShowAssignUser(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRemoveUser && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter Channel Name</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="From Channel" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" /><p></p>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="User to remove" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+            <button onClick={removeUsers} className="bg-green-600 px-4 py-2 rounded-lg">Remove</button>
+            <button onClick={() => setShowRemoveUser(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
