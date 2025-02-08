@@ -89,12 +89,12 @@ http://localhost:3000/home
 - Product Owner(s): Elliot Vinet, Paria Jafarian  
 - Development member(s): Ulysse Allard, Zachary Cohen
 
-- Yénita Aman (backend)
-- Alexandre Raymond (backend and frontend)
-- Elliot Vinet (backend)
-- Paria Jafarian (frontend)
-- Ulysse Allard (backend and frontend)
-- Zachary Cohen (backend and frontend)
+    - Yénita Aman (backend)
+    - Alexandre Raymond (backend and frontend)
+    - Elliot Vinet (backend)
+    - Paria Jafarian (frontend)
+    - Ulysse Allard (backend and frontend)
+    - Zachary Cohen (backend and frontend)
 
   
 ## Roles for Sprint 2
