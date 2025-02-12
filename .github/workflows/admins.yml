@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Run frontend manual tests
-        run: node frontend/admin.test.js  # Runs the frontend test script
+        run: node frontend/tests/admin.test.js  # Runs the frontend test script
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -54,4 +54,4 @@ jobs:
             sleep 1  # Waits for MySQL to be ready
           done
       - name: Run backend manual tests
-        run: node backend/admin.test.js
+        run: node backend/tests/admin.test.js
