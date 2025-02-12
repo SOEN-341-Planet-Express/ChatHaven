@@ -30,10 +30,10 @@ Our project, ChatHaven, addresses these issues by providing a simple and user-fr
 - Frontend development: HTML,CSS, React and JavaScript
 - Backend development: Node.js,Express
 - Database: MySQL
-- Other tools: XAMPP, GitHub
+- Other tools: Microsoft Azure, GitHub
 ## Deployment
 ### 1. Prerequisites:
-Install [VS Code](https://code.visualstudio.com/), [Node.js](https://nodejs.org/en) and [XAMPP](https://www.apachefriends.org/). Make sure that both Apache and MySQL servers are running.
+Install [VS Code](https://code.visualstudio.com/), [Node.js](https://nodejs.org/en) and [Microsoft Azure](https://azure.microsoft.com/en-ca/pricing/purchase-options/azure-account/search?ef_id=_k_Cj0KCQiA-5a9BhCBARIsACwMkJ7jixTq_2VhYRYXeGbxo4Rqaxvroxjl1jVBMdPq5w7b0cba0n6F4REaAgW0EALw_wcB_k_&OCID=AIDcmmqz3gd78m_SEM__k_Cj0KCQiA-5a9BhCBARIsACwMkJ7jixTq_2VhYRYXeGbxo4Rqaxvroxjl1jVBMdPq5w7b0cba0n6F4REaAgW0EALw_wcB_k_&gad_source=1&gclid=Cj0KCQiA-5a9BhCBARIsACwMkJ7jixTq_2VhYRYXeGbxo4Rqaxvroxjl1jVBMdPq5w7b0cba0n6F4REaAgW0EALw_wcB). Make sure that both Apache and MySQL servers are running.
 ### 2. Cloning Repository:
 Open **VS Code**, then open the terminal (`Ctrl + ~` or **View > Terminal**).  
 Run the following command to clone the repository:  
@@ -43,12 +43,12 @@ git clone https://github.com/yourusername/ChatHaven.git
 cd ChatHaven
 ``` 
 ### 3. Install Dependencies:
+Within the fronten folder run the following command:
 ```sh
 npm install
 ```
 ### 4. Set Up Database:
-Start XAMPP and enable Apache & MySQL.
-Open phpMyAdmin (http://localhost/phpmyadmin/).
+Create mySQL resource on Microsoft Azure. Modify server.js file to communicate with azure mySQL database.
 
 Create a new database:
 - Click New > Enter database name (" ") > Click Create.
@@ -63,7 +63,7 @@ Create an **env.** file by running:
 touch .env
 ```
 ### 6. Start the server
-Run the following command:
+within the frontend and backend folder run the following command:
 ```sh
 npm start
 ```
@@ -74,21 +74,29 @@ npm run dev
 ### 7. Access web application
 Go to:
 ```sh
-http://localhost:3000
+http://localhost:3000/home
 ```
 ## User Guide
 - To access admin login: 
-    - Email: john.doe@email.com
-    - password: admin1234
+    - Email: Ulysse
+    - password: abc
 
 - To access member login: 
-    - Email: jane.doe@email.com
-    - password: member1234
+    Enter any username and password
 ## Roles for Sprint 1
 - Scrum Master: Yénita Aman
 - Secretary: Alexandre Raymond
-- Product Owner(s): Elliot Vinet, Paria Jafarian
+- Product Owner(s): Elliot Vinet, Paria Jafarian  
 - Development member(s): Ulysse Allard, Zachary Cohen
+
+    - Yénita Aman (backend)
+    - Alexandre Raymond (backend and frontend)
+    - Elliot Vinet (backend)
+    - Paria Jafarian (frontend)
+    - Ulysse Allard (backend and frontend)
+    - Zachary Cohen (backend and frontend)
+
+  
 ## Roles for Sprint 2
 To be defined.
 ## Roles for Sprint 3

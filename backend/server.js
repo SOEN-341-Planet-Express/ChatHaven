@@ -180,16 +180,42 @@ app.post("/checkAdmin", (req, res) => {
 
 //Get list of channels to display
 app.post("/getChannels", (req, res) => {
-  
+  const {user} = req.body
   const mysql = "SELECT * FROM channels";
   db.query(mysql, [], (err, results) => {
     if (err) return res.status(500).json({ error: "DB error" });
     
+    //Check if user is admin before passing list of channels
+    var role;
     const list = []
-    for(let i = 0; i < results.length; i++){
-      list[i] = results[i].channel_name
-    }
-    res.status(201).json({ message:list });
+    const checkAdminSQL = "SELECT role FROM users WHERE username=?";
+    db.query(checkAdminSQL, [user], (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
+      role = result[0].role;
+      if(role ==="admin"){
+        for(let i = 0; i < results.length; i++){
+            list[i] = results[i].channel_name
+          }
+          res.status(201).json({ message:list });
+        } else {
+          var k = 0;
+          for(let j = 0; j < results.length; j++){
+          const channelListName = results[j].channel_name + "_user_list"
+          const checkUserChannelSQL = "SELECT * FROM ?? WHERE users=?";
+          
+          db.query(checkUserChannelSQL, [channelListName, user], (err, result1) => {
+            if(typeof result1[0] !== 'undefined'){
+              list[k] = results[j].channel_name
+              k++
+            }
+              if(j == results.length-1){
+                
+                res.status(201).json({ message:list });
+              }
+          });
+        }
+        }
+      }); 
   });
 });
 
