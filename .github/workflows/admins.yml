@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build file
-        run: npm run build
+        run: npm start
       - name: Run frontend manual tests
         run: node frontend/admin.js  # Runs the frontend test script
 
