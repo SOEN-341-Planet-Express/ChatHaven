@@ -53,6 +53,10 @@ jobs:
         run: npm install express
       - name: Ensure mysql2 works
         run: npm install mysql2
+      - name: Ensure cors works
+        run: npm install cors --save
+      - name: Ensure dotenv works
+        run: npm install dotenv
       - name: Wait for MySQL
         run: |
           until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass; do
