@@ -48,6 +48,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
+      - name: Ensure express works
+        run: npm install express
       - name: Wait for MySQL
         run: |
           until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass; do
