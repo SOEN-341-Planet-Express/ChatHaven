@@ -210,9 +210,9 @@ app.post("/forgotpassword", (req, res) => {
   });
 });
 
+module.exports = app;
 
-
-
-
-// Start Server
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5001;
+  app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+}
