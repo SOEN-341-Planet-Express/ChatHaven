@@ -50,6 +50,8 @@ jobs:
         run: npm install
       - name: Ensure express.js works
         run: npm install express
+      - name: Ensure mysql2 works
+        run: npm install mysql2
       - name: Wait for MySQL
         run: |
           until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass; do
