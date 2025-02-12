@@ -19,10 +19,8 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm install
-      - name: Build file
-        run: npm start
       - name: Run frontend manual tests
-        run: node frontend/login.js  # Runs the frontend test script
+        run: node frontend/login.test.js  # Runs the frontend test script
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -56,4 +54,4 @@ jobs:
             sleep 1  # Waits for MySQL to be ready
           done
       - name: Run backend manual tests
-        run: node backend/login.js
+        run: node backend/login.test.js
