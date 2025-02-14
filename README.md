@@ -98,7 +98,11 @@ http://localhost:3000/home
 
   
 ## Roles for Sprint 2
-To be defined.
+- Scrum Master: Zachary Cohen
+- Secretary: Ulysse Allard
+- Product Owner(s): Alexandre Raymond
+- Development member(s): Paria Jafarian, Yénita Aman, Elliot Vinet
+  
 ## Roles for Sprint 3
 To be defined.
 ## Roles for Sprint 4
