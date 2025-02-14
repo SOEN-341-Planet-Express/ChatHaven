@@ -1,0 +1,43 @@
+Meeting # 4
+
+Meeting Title: Pre-Lab meeting
+Date 14 February 2025
+Time: 5 pm
+
+Attendees:
+- Zachary Cohen 40200376 (Scrum Master)
+- Yenita Aman 40293370 
+- Paria Jafarian 40248494
+- Ulysse Allard 40252823 (Secretary)
+- Elliot Vinet 40210063
+- Alexander 40167836
+
+Absentees: None
+
+Agenda:
+- Touch base 
+- Discuss the remaining tasks
+- Explain issue we had this week
+
+
+Topics Discussed:
+-Zachary set up the pipeline 
+-Need to modify the tables in the database in order to set up the group chat and private messages.
+-Table for group chat and table for private messeging. 
+-Better to have one tabel with all dms instead of multiple tables.
+-Set up the Github in terms of tasks. Put the tasks in the burndown chart into git. 
+
+Next Steps:
+- Henny will set up the Github in terms of tasks. Put the tasks in the burndown chart into git. 
+- Elliot, Ulysse and Alex will work on resetting the database.
+
+
+Everyone:
+
+Implement the task that were personnaly selected on burndown chart. 
+
+Adjourned by: Ulysse
+Time: 5:45PM
+
+Next meeting:
+Wednesday Feb 19th 8:00PM
