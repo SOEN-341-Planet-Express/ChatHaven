@@ -13,7 +13,7 @@ const db = mysql.createConnection({
   host: "srvd12ed324fsd5t34r34.mysql.database.azure.com",
   user: "rtdsfasdf23r2eddva32",
   password: "kPnWV7@@m%",  
-  database: "chathaven_DB",
+  database: "chathaven_DB_NEW",
   port: 3306,
   ssl: { rejectUnauthorized: true },
 });
@@ -67,7 +67,7 @@ app.post("/createChannel", (req, res) => {
   const {channelName}  = req.body;
 
   // Check if channel already exists
-  const checkChannelSQL = "SELECT * FROM channels WHERE channel_name = ?";
+  const checkChannelSQL = "SELECT * FROM channel_list WHERE channel_name = ?";
   db.query(checkChannelSQL, [channelName], (err, results) => {  
 
     if (err) return res.status(500).json({ error: "DB error" });
@@ -75,22 +75,10 @@ app.post("/createChannel", (req, res) => {
     if (results.length > 0) {
       return res.status(400).json({ message: "Channel already exists, try another name" });
     }  
-    //Creates the table that will contain the chats sent in the channel
-    const createChannelSQL = "CREATE TABLE ?? ( sender VARCHAR(255) NOT NULL UNIQUE, message VARCHAR(255) NOT NULL )";
-    db.query(createChannelSQL, channelName, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
-    });
 
     //Updates the table of channels to contain the newest channel
-    const updateChannelListSQL = "INSERT INTO channels (channel_name) VALUES (?)";
+    const updateChannelListSQL = "INSERT INTO channel_list (channel_name) VALUES (?)";
     db.query(updateChannelListSQL, channelName, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
-    });
-
-    //Creates the table that will contain the users with access to the new channel
-    const userlist = channelName+"_user_list"
-    const createChannelUserListSQL = "CREATE TABLE ?? ( users VARCHAR(255) NOT NULL UNIQUE)";
-    db.query(createChannelUserListSQL, userlist, (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
 
@@ -102,36 +90,21 @@ app.post("/createChannel", (req, res) => {
 //Delete Channel
 app.post("/deleteChannel", (req, res) => {
   const {channelName}  = req.body;
-  
-    //Deletes the table that contained the chats sent in the channel
-    const insertUserSQL = "DROP TABLE ??";
-    db.query(insertUserSQL, channelName, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
-    });
-    
     //Updates the table of channels to not contain the deleted channel
-    const updateChannelListSQL = "DELETE FROM channels WHERE channel_name=?";
+    const updateChannelListSQL = "DELETE FROM channel_list WHERE channel_name=?";
     db.query(updateChannelListSQL, channelName, (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
     res.status(201).json({ message: "Channel Deleted" });
-  
-    //Deletes the table that contained the users with access to the channel
-    const userlist = channelName+"_user_list"
-    const dropUserListSQL = "DROP TABLE ??";
-    db.query(dropUserListSQL, userlist, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
-    });
 });
 
 //Assign users to channels
 app.post("/assignUsers", (req, res) => {
   const {username, channelName}  = req.body;
-  const userList = channelName+"_user_list"
   
   // Check if user is already in the chat
-  const checkChannelSQL = "SELECT * FROM ?? WHERE users = ?";
-  db.query(checkChannelSQL, [userList, username], (err, results) => {  
+  const checkChannelSQL = "SELECT * FROM channel_access WHERE (permitted_users=? AND channel_name=?)";
+  db.query(checkChannelSQL, [username, channelName], (err, results) => {  
 
     if (err) return res.status(500).json({ error: "DB error" });
 
@@ -140,9 +113,9 @@ app.post("/assignUsers", (req, res) => {
     } 
 
   
-  const insertToUserListSQL = "INSERT INTO ?? (users) VALUES (?)";
+  const insertToUserListSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
   
-    db.query(insertToUserListSQL, [userList, username], (err, result) => {
+    db.query(insertToUserListSQL, [channelName, username], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
       res.status(201).json({ message: "User added to channel" });
     });
@@ -152,11 +125,10 @@ app.post("/assignUsers", (req, res) => {
 //Remove users from channel
 app.post("/removeUsers", (req, res) => {
   const {username, channelName}  = req.body;
-  const userList = channelName+"_user_list"
   
-  const removeFromUserListSQL = "DELETE FROM ?? WHERE users=?";
+  const removeFromUserListSQL = "DELETE FROM channel_access WHERE (permitted_users=? AND channel_name=?)";
   
-    db.query(removeFromUserListSQL, [userList, username], (err, result) => {
+    db.query(removeFromUserListSQL, [username, channelName], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
       res.status(201).json({ message: "User removed from channel" });
     });
@@ -181,7 +153,7 @@ app.post("/checkAdmin", (req, res) => {
 //Get list of channels to display
 app.post("/getChannels", (req, res) => {
   const {user} = req.body
-  const mysql = "SELECT * FROM channels";
+  const mysql = "SELECT * FROM channel_list";
   db.query(mysql, [], (err, results) => {
     if (err) return res.status(500).json({ error: "DB error" });
     
@@ -198,22 +170,15 @@ app.post("/getChannels", (req, res) => {
           }
           res.status(201).json({ message:list });
         } else {
-          var k = 0;
-          for(let j = 0; j < results.length; j++){
-          const channelListName = results[j].channel_name + "_user_list"
-          const checkUserChannelSQL = "SELECT * FROM ?? WHERE users=?";
+          const checkUserChannelSQL = "SELECT * FROM channel_access WHERE permitted_users=?";
           
-          db.query(checkUserChannelSQL, [channelListName, user], (err, result1) => {
-            if(typeof result1[0] !== 'undefined'){
-              list[k] = results[j].channel_name
-              k++
+          db.query(checkUserChannelSQL, [user], (err, result1) => {
+            for(let i = 0; i < result1.length; i++){
+              list[i] = result1[i].channel_name
             }
-              if(j == results.length-1){
-                
-                res.status(201).json({ message:list });
-              }
+            res.status(201).json({ message:list });
           });
-        }
+        
         }
       }); 
   });
