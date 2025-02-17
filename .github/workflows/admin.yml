@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main  # Runs on pull requests to the main branch
+      - test-ymls
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
