@@ -79,6 +79,7 @@ function Messages() {
     checkAdmin();
     getChannels();
   }, [navigate, currentChannel, currentChannelType]);
+
   
   const createChannel = async (e) => {
     e.preventDefault();
@@ -161,8 +162,7 @@ function Messages() {
   }
 
   const loadMessages = async () => {
-    
-    //alert(currentChannelType)
+
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -200,10 +200,12 @@ function Messages() {
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
         <button 
           onClick={(e) => {
-            setCurrentChannel(item);setCurrentChannelType('groupchat');
+
+            setCurrentChannel(item);
+            setCurrentChannelType('groupchat');
+
           }} 
-          className="w-full text-left p-2"
-        >
+          className="w-full text-left p-2">
           {item}
         </button>
       </li>
@@ -224,13 +226,50 @@ function Messages() {
       </li>
     ));
   }
+
+  const deleteMessage = async (messageId) => {
+    const response = await fetch("http://localhost:5001/deleteMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: messageId }), // Send the my_row_ID to be deleted
+    });
+  
+    const data = await response.json();
+  
+    if (response.ok) {
+      alert("Message Deleted!");
+      setMessageList((prevMessages) => prevMessages.filter((msg) => msg.id !== messageId));
+    } else {
+      alert(data.message);
+    }
+  };
   
   function listOutMessages(items) {
-    return items.map((item, index) => (
-      <p key={index} className="bg-gray-600 p-2 rounded-lg">
-        <strong className="text-green-400">{item.sender}: </strong>
-        {item.message}
-      </p>
+    return items.map((item) => (
+      <div key={item.id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
+        <div>
+          <p>
+            <strong className="text-green-400">{item.sender}: </strong>
+            {item.message}
+          </p>
+          {/* Show Message ID only if the user is an admin */}
+          {isAdmin === "true" && (
+            <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
+          )}
+        </div>
+  
+        {/* Show delete button only if the user is an admin */}
+        {isAdmin === "true" && (
+          <div>
+            <button
+              onClick={() => deleteMessage(item.my_row_id)} // Delete message by ID
+              className="hover:bg-red-700  px-2 py-1 "
+            >
+              ❌
+            </button>
+          </div>
+        )}
+      </div>
     ));
   }
 
@@ -302,15 +341,15 @@ function Messages() {
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex items-center">
             <input
               type="text"
               onChange={(e) => setMessageToSend(e.target.value)}
               
               placeholder="Type a message..."
-              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
             />
-            <button id="messageField" className="w-1/6" onClick={sendMessage}>send</button>
+            <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>send</button>
           </div>
           
           </div>
