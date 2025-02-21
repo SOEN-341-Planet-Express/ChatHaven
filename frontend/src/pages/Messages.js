@@ -73,7 +73,12 @@ function Messages() {
     getDms();
     checkAdmin();
     getChannels();
-  }, [navigate]);
+
+    if (currentChannel) {
+      loadMessages();  // Call loadMessages whenever currentChannel changes
+    }
+  
+  }, [navigate, currentChannel]); 
   
   const createChannel = async (e) => {
     e.preventDefault();
@@ -155,8 +160,7 @@ function Messages() {
     }
   }
 
-  const loadMessages = async (e) => {
-    e.preventDefault()
+  const loadMessages = async () => {
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -167,7 +171,6 @@ function Messages() {
 
     if (response.ok) {
       setMessageList(data.message)
-      loadMessages(e)
     } else {
       alert(data.message)
     }
@@ -197,7 +200,6 @@ function Messages() {
         <button 
           onClick={(e) => {
             setCurrentChannel(item);
-            loadMessages(e);
           }} 
           className="w-full text-left p-2"
         >
@@ -285,15 +287,15 @@ function Messages() {
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex items-center">
             <input
               type="text"
               onChange={(e) => setMessageToSend(e.target.value)}
               
               placeholder="Type a message..."
-              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
             />
-            <button id="messageField" className="w-1/6" onClick={sendMessage}>send</button>
+            <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>send</button>
           </div>
           
           </div>
