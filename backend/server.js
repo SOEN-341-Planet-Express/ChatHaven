@@ -184,6 +184,20 @@ app.post("/getChannels", (req, res) => {
   });
 });
 
+//Load messages
+
+app.post("/loadMessages", (req, res) => {
+  const { currentChannel } = req.body;
+
+  const mysql = "SELECT * FROM messages WHERE destination=?";
+  db.query(mysql, [currentChannel], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    
+
+    res.status(200).json({ message: results})
+  });
+});
+
 // Forgot Password
 
 app.post("/forgotpassword", (req, res) => {
