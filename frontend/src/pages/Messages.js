@@ -7,6 +7,7 @@ function Messages() {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
+  const [privateMessageList, setPrivateMessageList] = useState([]);
   const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -14,9 +15,10 @@ function Messages() {
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
-  const currentChannel = 'test'
   const currentChannelType = 'groupchat'
   const [messageToSend, setMessageToSend] = useState("")
+  const [currentChannel, setCurrentChannel] = useState("")
+
 
 
   useEffect(() => {
@@ -53,10 +55,26 @@ function Messages() {
       }
     }
 
+    async function getDms() {
+      const response = await fetch("http://localhost:5001/getPrivateMessage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setPrivateMessageList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    getDms();
     checkAdmin();
     getChannels();
   }, [navigate]);
-
+  
   const createChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return alert("Please enter a channel name.");
@@ -176,10 +194,19 @@ function Messages() {
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        {item}
+        <button 
+          onClick={(e) => {
+            setCurrentChannel(item);
+            loadMessages(e);
+          }} 
+          className="w-full text-left p-2"
+        >
+          {item}
+        </button>
       </li>
     ));
   }
+  
 
   function listOutMessages(items) {
     return items.map((item, index) => (
@@ -189,6 +216,8 @@ function Messages() {
       </p>
     ));
   }
+
+
 
 
   return (
@@ -232,17 +261,7 @@ function Messages() {
             
 
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
-            <ul className="space-y-2">
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Johnny
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Claire
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Alexi
-              </li>
-            </ul>
+            <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>
 
 
           
@@ -262,8 +281,6 @@ function Messages() {
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
-
-          <button onClick={loadMessages}>load</button>
           </h2>
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
