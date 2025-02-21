@@ -203,15 +203,23 @@ app.post("/getPrivateMessage", (req, res) => {
 //Load messages
 
 app.post("/loadMessages", (req, res) => {
-  const { currentChannel } = req.body;
+  const { currentChannel, currentChannelType, loggedInUser } = req.body;
 
-  const mysql = "SELECT * FROM messages WHERE destination=?";
-  db.query(mysql, [currentChannel], (err, results) => {
+  if(currentChannelType=='groupchat'){
+  const mysql = "SELECT * FROM messages WHERE destination=? AND message_type=?";
+  db.query(mysql, [currentChannel, currentChannelType], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-    
-
     res.status(200).json({ message: results})
   });
+} else if(currentChannelType=='dm'){
+  const mysql = "SELECT * FROM messages WHERE ((sender=? AND destination=?) OR (sender=? AND destination=?)) AND message_type=?";
+  db.query(mysql, [currentChannel, loggedInUser, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    res.status(200).json({ message: results})
+  });
+}
+
+
 });
 
 // Delete a message

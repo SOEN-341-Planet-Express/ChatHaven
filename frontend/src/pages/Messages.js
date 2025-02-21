@@ -15,7 +15,7 @@ function Messages() {
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
-  const currentChannelType = 'groupchat'
+  const [currentChannelType, setCurrentChannelType] = useState("")
   const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
 
@@ -70,15 +70,16 @@ function Messages() {
       }
     }
 
+
+    if(currentChannel || currentChannelType){
+      loadMessages()
+    }
+
     getDms();
     checkAdmin();
     getChannels();
+  }, [navigate, currentChannel, currentChannelType]);
 
-    if (currentChannel) {
-      loadMessages();  // Call loadMessages whenever currentChannel changes
-    }
-  
-  }, [navigate, currentChannel]); 
   
   const createChannel = async (e) => {
     e.preventDefault();
@@ -161,10 +162,11 @@ function Messages() {
   }
 
   const loadMessages = async () => {
+
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentChannel }),
+      body: JSON.stringify({ currentChannel, currentChannelType, loggedInUser }),
     })
     
     const data = await response.json()
@@ -189,7 +191,6 @@ function Messages() {
 
     if (response.ok) {
       loadMessages(e)
-      
     } else {
       alert(data.message)
     }
@@ -199,7 +200,24 @@ function Messages() {
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
         <button 
           onClick={(e) => {
+
             setCurrentChannel(item);
+            setCurrentChannelType('groupchat');
+
+          }} 
+          className="w-full text-left p-2">
+          {item}
+        </button>
+      </li>
+    ));
+  }
+
+  function listOutDMs(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+        <button 
+          onClick={(e) => {
+            setCurrentChannel(item);setCurrentChannelType('dm');
           }} 
           className="w-full text-left p-2"
         >
@@ -208,7 +226,6 @@ function Messages() {
       </li>
     ));
   }
-  
 
   const deleteMessage = async (messageId) => {
     const response = await fetch("http://localhost:5001/deleteMessage", {
@@ -226,8 +243,6 @@ function Messages() {
       alert(data.message);
     }
   };
-
-
   
   function listOutMessages(items) {
     return items.map((item) => (
@@ -302,7 +317,7 @@ function Messages() {
             
 
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
-            <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>
+            <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>
 
 
           
