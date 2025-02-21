@@ -198,8 +198,15 @@ app.post("/loadMessages", (req, res) => {
   });
 });
 
-// Forgot Password
+// Delete a message
+app.post("/deleteMessage", (req, res) => {
+  const sql = "DELETE FROM messages WHERE my_row_id = ?";
+  db.query(sql, [req.body.id], (err, result) => {
+    res.json({ message: "Message deleted" });
+  });
+});
 
+// Forgot Password
 app.post("/forgotpassword", (req, res) => {
   const { username, password } = req.body;
 

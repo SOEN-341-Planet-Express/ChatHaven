@@ -160,12 +160,51 @@ function Messages() {
     ));
   }
 
+  const deleteMessage = async (messageId) => {
+    const response = await fetch("http://localhost:5001/deleteMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: messageId }), // Send the my_row_ID to be deleted
+    });
+  
+    const data = await response.json();
+  
+    if (response.ok) {
+      alert("Message Deleted!");
+      setMessageList((prevMessages) => prevMessages.filter((msg) => msg.id !== messageId));
+    } else {
+      alert(data.message);
+    }
+  };
+
+
+  
   function listOutMessages(items) {
-    return items.map((item, index) => (
-      <p key={index} className="bg-gray-600 p-2 rounded-lg">
-        <strong className="text-green-400">{item.sender}: </strong>
-        {item.message}
-      </p>
+    return items.map((item) => (
+      <div key={item.id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
+        <div>
+          <p>
+            <strong className="text-green-400">{item.sender}: </strong>
+            {item.message}
+          </p>
+          {/* Show Message ID only if the user is an admin */}
+          {isAdmin === "true" && (
+            <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
+          )}
+        </div>
+  
+        {/* Show delete button only if the user is an admin */}
+        {isAdmin === "true" && (
+          <div>
+            <button
+              onClick={() => deleteMessage(item.my_row_id)} // Delete message by ID
+              className="hover:bg-red-700  px-2 py-1 "
+            >
+              ❌
+            </button>
+          </div>
+        )}
+      </div>
     ));
   }
 
