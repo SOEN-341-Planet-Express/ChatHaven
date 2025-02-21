@@ -7,12 +7,15 @@ function Messages() {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
+  const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAssignUser, setShowAssignUser] = useState(false);
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
+  const currentChannel = 'test'
+
 
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
@@ -132,6 +135,23 @@ function Messages() {
     }
   }
 
+  const loadMessages = async (e) => {
+    e.preventDefault()
+    const response = await fetch("http://localhost:5001/loadMessages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentChannel }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      setMessageList(data.message)
+    } else {
+      alert(data.message)
+    }
+  }
+
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
@@ -139,6 +159,16 @@ function Messages() {
       </li>
     ));
   }
+
+  function listOutMessages(items) {
+    return items.map((item, index) => (
+      <p key={index} className="bg-gray-600 p-2 rounded-lg">
+        <strong className="text-green-400">{item.sender}: </strong>
+        {item.message}
+      </p>
+    ));
+  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
@@ -212,19 +242,10 @@ function Messages() {
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
 
+          <button onClick={loadMessages}>load</button>
           </h2>
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
-            <div className="space-y-4">
-              <p className="bg-gray-600 p-2 rounded-lg">
-                <strong className="text-blue-400">User1:</strong> Hey
-              </p>
-              <p className="bg-gray-600 p-2 rounded-lg">
-                <strong className="text-green-400">User2:</strong> Hi
-              </p>
-              <p className="bg-gray-600 p-2 rounded-lg">
-                <strong className="text-yellow-400">User3:</strong> Yoo!
-              </p>
-            </div>
+          <div className="space-y-4">{listOutMessages(messageList)}</div>
           </div>
           <div className="mt-4">
             <input
