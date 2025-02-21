@@ -15,7 +15,10 @@ function Messages() {
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
+  const currentChannelType = 'groupchat'
+  const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
+
 
 
   useEffect(() => {
@@ -164,11 +167,30 @@ function Messages() {
 
     if (response.ok) {
       setMessageList(data.message)
+      loadMessages(e)
     } else {
       alert(data.message)
     }
   }
 
+  const sendMessage = async (e) => {
+    
+    e.preventDefault()
+    const response = await fetch("http://localhost:5001/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageToSend, loggedInUser, currentChannel, currentChannelType }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      loadMessages(e)
+      
+    } else {
+      alert(data.message)
+    }
+  }
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
@@ -266,10 +288,14 @@ function Messages() {
           <div className="mt-4">
             <input
               type="text"
+              onChange={(e) => setMessageToSend(e.target.value)}
+              
               placeholder="Type a message..."
-              className="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
             />
+            <button id="messageField" className="w-1/6" onClick={sendMessage}>send</button>
           </div>
+          
           </div>
         </div>
         

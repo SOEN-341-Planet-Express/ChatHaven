@@ -214,6 +214,16 @@ app.post("/loadMessages", (req, res) => {
   });
 });
 
+app.post("/sendMessage", (req, res) => {
+  const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
+
+  const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
+  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    res.status(200).json({ message: "Message sent"})
+  });
+});
+
 // Forgot Password
 
 app.post("/forgotpassword", (req, res) => {
