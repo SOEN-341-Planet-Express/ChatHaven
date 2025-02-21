@@ -14,7 +14,7 @@ function Messages() {
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
-  const currentChannel = 'test'
+  const [currentChannel, setCurrentChannel] = useState("")
 
 
   useEffect(() => {
@@ -155,10 +155,19 @@ function Messages() {
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        {item}
+        <button 
+          onClick={(e) => {
+            setCurrentChannel(item);
+            loadMessages(e);
+          }} 
+          className="w-full text-left p-2"
+        >
+          {item}
+        </button>
       </li>
     ));
   }
+  
 
   function listOutMessages(items) {
     return items.map((item, index) => (
@@ -168,6 +177,8 @@ function Messages() {
       </p>
     ));
   }
+
+
 
 
   return (
@@ -241,8 +252,6 @@ function Messages() {
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
-
-          <button onClick={loadMessages}>load</button>
           </h2>
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
