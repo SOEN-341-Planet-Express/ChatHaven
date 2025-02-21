@@ -7,6 +7,7 @@ function Messages() {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
+  const [privateMessageList, setPrivateMessageList] = useState([]);
   const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -51,10 +52,26 @@ function Messages() {
       }
     }
 
+    async function getDms() {
+      const response = await fetch("http://localhost:5001/getPrivateMessage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setPrivateMessageList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    getDms();
     checkAdmin();
     getChannels();
   }, [navigate]);
-
+  
   const createChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return alert("Please enter a channel name.");
@@ -211,17 +228,7 @@ function Messages() {
             
 
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
-            <ul className="space-y-2">
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Johnny
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Claire
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Alexi
-              </li>
-            </ul>
+            <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>
 
 
           
