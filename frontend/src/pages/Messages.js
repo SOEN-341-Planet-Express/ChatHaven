@@ -239,6 +239,7 @@ function Messages() {
     if (response.ok) {
       alert("Message Deleted!");
       setMessageList((prevMessages) => prevMessages.filter((msg) => msg.id !== messageId));
+      loadMessages(messageId) // Reload page after message is sent
     } else {
       alert(data.message);
     }
