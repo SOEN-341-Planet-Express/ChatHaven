@@ -7,6 +7,7 @@ function Messages() {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
+  const [privateMessageList, setPrivateMessageList] = useState([]);
   const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -14,7 +15,10 @@ function Messages() {
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
-  const currentChannel = 'test'
+  const currentChannelType = 'groupchat'
+  const [messageToSend, setMessageToSend] = useState("")
+  const [currentChannel, setCurrentChannel] = useState("")
+
 
 
   useEffect(() => {
@@ -51,10 +55,31 @@ function Messages() {
       }
     }
 
+    async function getDms() {
+      const response = await fetch("http://localhost:5001/getPrivateMessage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setPrivateMessageList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    getDms();
     checkAdmin();
     getChannels();
-  }, [navigate]);
 
+    if (currentChannel) {
+      loadMessages();  // Call loadMessages whenever currentChannel changes
+    }
+  
+  }, [navigate, currentChannel]); 
+  
   const createChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return alert("Please enter a channel name.");
@@ -135,8 +160,7 @@ function Messages() {
     }
   }
 
-  const loadMessages = async (e) => {
-    e.preventDefault()
+  const loadMessages = async () => {
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -152,13 +176,39 @@ function Messages() {
     }
   }
 
+  const sendMessage = async (e) => {
+    
+    e.preventDefault()
+    const response = await fetch("http://localhost:5001/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageToSend, loggedInUser, currentChannel, currentChannelType }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      loadMessages(e)
+      
+    } else {
+      alert(data.message)
+    }
+  }
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        {item}
+        <button 
+          onClick={(e) => {
+            setCurrentChannel(item);
+          }} 
+          className="w-full text-left p-2"
+        >
+          {item}
+        </button>
       </li>
     ));
   }
+  
 
   const deleteMessage = async (messageId) => {
     const response = await fetch("http://localhost:5001/deleteMessage", {
@@ -209,6 +259,8 @@ function Messages() {
   }
 
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
       <div className="container mx-auto px-4 py-8">
@@ -250,17 +302,7 @@ function Messages() {
             
 
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
-            <ul className="space-y-2">
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Johnny
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Claire
-              </li>
-              <li className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-                Alexi
-              </li>
-            </ul>
+            <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>
 
 
           
@@ -280,19 +322,21 @@ function Messages() {
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
-
-          <button onClick={loadMessages}>load</button>
           </h2>
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex items-center">
             <input
               type="text"
+              onChange={(e) => setMessageToSend(e.target.value)}
+              
               placeholder="Type a message..."
-              className="w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
             />
+            <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>send</button>
           </div>
+          
           </div>
         </div>
         

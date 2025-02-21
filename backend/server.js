@@ -184,6 +184,22 @@ app.post("/getChannels", (req, res) => {
   });
 });
 
+//Get list of Users to display in Private message 
+app.post("/getPrivateMessage", (req, res) => {
+  const { user } = req.body; 
+  
+  const getUsersSQL = "SELECT username FROM users WHERE username != ?";
+  
+  db.query(getUsersSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+
+    // Extract usernames into a list
+    const userList = results.map(row => row.username);
+
+    res.status(200).json({ message: userList });
+  });
+});
+
 //Load messages
 
 app.post("/loadMessages", (req, res) => {
@@ -203,6 +219,16 @@ app.post("/deleteMessage", (req, res) => {
   const sql = "DELETE FROM messages WHERE my_row_id = ?";
   db.query(sql, [req.body.id], (err, result) => {
     res.json({ message: "Message deleted" });
+  });
+});
+
+app.post("/sendMessage", (req, res) => {
+  const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
+
+  const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
+  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    res.status(200).json({ message: "Message sent"})
   });
 });
 
