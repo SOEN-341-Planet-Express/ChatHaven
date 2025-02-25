@@ -4,23 +4,24 @@ on:
   pull_request:
     branches:
       - main  # Runs on pull requests to the main branch
-  workflow_dispatch:  # Allows manual triggering of the workflow
+      - ic-final
 
 jobs:
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2  # Checks out the repository code
-      - name: Use Node.js 16.x
+      - uses: actions/checkout@v2
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v2
         with:
-          node-version: 16.x
+          node-version: 22.x
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: package.json
       - name: Install dependencies
+        working-directory: ./frontend
         run: npm install
       - name: Run frontend manual tests
-        run: node frontend/tests/admin.test.js  # Runs the frontend test script
+        run: node ./frontend/src/__tests__/admin.test.js
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -41,26 +42,18 @@ jobs:
           --health-retries=3
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js 16.x
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v2
         with:
-          node-version: 16.x
+          node-version: 22.x
           cache: 'npm'
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install
-      - name: Ensure express works
-        run: npm install express
-      - name: Ensure mysql2 works
-        run: npm install mysql2
-      - name: Ensure cors works
-        run: npm install cors --save
-      - name: Ensure dotenv works
-        run: npm install dotenv
       - name: Wait for MySQL
         run: |
           until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass; do
-            sleep 1  # Waits for MySQL to be ready
+            sleep 1
           done
       - name: Run backend manual tests
         run: node backend/tests/admin.test.js
