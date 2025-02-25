@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
+import io from "socket.io-client";
+
 
 function Messages() {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ function Messages() {
   const [currentChannelType, setCurrentChannelType] = useState("")
   const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
+  const [socket, setSocket] = useState(null);
 
 
 
@@ -80,6 +83,45 @@ function Messages() {
     getChannels();
   }, [navigate, currentChannel, currentChannelType]);
 
+  // Initialize the socket connection
+  useEffect(() => {
+    const newSocket = io("http://localhost:5001");
+    setSocket(newSocket);
+    return () => newSocket.close();
+  }, []);
+  
+  // Listen for incoming messages via WebSocket
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("receiveMessage", (data) => {
+      if (currentChannelType === "dm") {
+        // For DMs, check both directions.
+        if (
+          (data.sender === loggedInUser && data.destination === currentChannel) ||
+          (data.sender === currentChannel && data.destination === loggedInUser)
+        ) {
+          setMessageList((prev) => [...prev, data]);
+        }
+      } else if (data.destination === currentChannel) {
+        // For group chats, a simple match is sufficient.
+        setMessageList((prev) => [...prev, data]);
+      }
+    });
+    return () => socket.off("receiveMessage");
+  }, [socket, currentChannel, currentChannelType, loggedInUser]);
+
+  // Listen for deleteMessage event from the server
+  useEffect(() => {
+    if (!socket) return;
+    // Listen for deleteMessage event from the server
+    socket.on("deleteMessage", (data) => {
+      // Update the message list by removing the message with the matching id
+      setMessageList((prevMessages) => prevMessages.filter((msg) => msg.my_row_id !== data.id));
+    });
+    return () => socket.off("deleteMessage");
+  }, [socket]);
+  
+  
   
   const createChannel = async (e) => {
     e.preventDefault();
@@ -178,23 +220,19 @@ function Messages() {
     }
   }
 
-  const sendMessage = async (e) => {
-    
-    e.preventDefault()
-    const response = await fetch("http://localhost:5001/sendMessage", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messageToSend, loggedInUser, currentChannel, currentChannelType }),
-    })
-    
-    const data = await response.json()
-
-    if (response.ok) {
-      loadMessages(e)
-    } else {
-      alert(data.message)
-    }
-  }
+  // Emit the message through the WebSocket connection
+  const sendMessage = (e) => {
+    e.preventDefault();
+    if (!messageToSend.trim() || !socket) return;
+    socket.emit("sendMessage", {
+      messageToSend,
+      loggedInUser,
+      currentChannel,
+      currentChannelType,
+    });
+    setMessageToSend("");
+  };
+  
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
@@ -238,7 +276,8 @@ function Messages() {
   
     if (response.ok) {
       alert("Message Deleted!");
-      setMessageList((prevMessages) => prevMessages.filter((msg) => msg.id !== messageId));
+      // Remove the message using the correct property name
+      setMessageList((prevMessages) => prevMessages.filter((msg) => msg.my_row_id !== messageId));
       loadMessages(messageId) // Reload page after message is sent
     } else {
       alert(data.message);
@@ -247,24 +286,21 @@ function Messages() {
   
   function listOutMessages(items) {
     return items.map((item) => (
-      <div key={item.id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
+      <div key={item.my_row_id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
         <div>
           <p>
             <strong className="text-green-400">{item.sender}: </strong>
             {item.message}
           </p>
-          {/* Show Message ID only if the user is an admin */}
           {isAdmin === "true" && (
             <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
           )}
         </div>
-  
-        {/* Show delete button only if the user is an admin */}
         {isAdmin === "true" && (
           <div>
             <button
-              onClick={() => deleteMessage(item.my_row_id)} // Delete message by ID
-              className="hover:bg-red-700  px-2 py-1 "
+              onClick={() => deleteMessage(item.my_row_id)}
+              className="hover:bg-red-700 px-2 py-1"
             >
               ❌
             </button>
@@ -273,7 +309,7 @@ function Messages() {
       </div>
     ));
   }
-
+  
 
 
 
