@@ -1,12 +1,22 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const http = require("http"); // Required for Socket.io
+const { Server } = require("socket.io"); // Required for Socket.io
 
 const PORT = 5001; 
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Create an HTTP server and initialize Socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow all origins for development (adjust in production)
+  },
+});
 
 // Connection
 const db = mysql.createConnection({
@@ -22,6 +32,39 @@ db.connect(err => {
   if (err) throw err;
   console.log("Connected");
 });
+
+// WebSocket Connection Handling
+io.on("connection", (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
+  // Listen for incoming messages from the client
+  socket.on("sendMessage", (data) => {
+    const { messageToSend, loggedInUser, currentChannel, currentChannelType } = data;
+    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
+    
+    db.query(sql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return;
+      }
+      // Broadcast the new message to all connected clients
+      io.emit("receiveMessage", {
+        my_row_id: results.insertId,       // Standardized property
+        message: messageToSend,
+        sender: loggedInUser,
+        destination: currentChannel,
+        messageType: currentChannelType,
+        timestamp: new Date().toISOString(),
+      });
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`User disconnected: ${socket.id}`);
+  });
+});
+
+// --------------------- REST Endpoints --------------------- //
 
 //New User
 app.post("/register", (req, res) => {
@@ -223,12 +266,18 @@ app.post("/loadMessages", (req, res) => {
 });
 
 // Delete a message
+// Delete a message
 app.post("/deleteMessage", (req, res) => {
   const sql = "DELETE FROM messages WHERE my_row_id = ?";
   db.query(sql, [req.body.id], (err, result) => {
+    if (err) return res.status(500).json({ message: "Database error" });
+
+    // Emit a socket event to notify all clients about the deletion
+    io.emit("deleteMessage", { id: req.body.id });
     res.json({ message: "Message deleted" });
   });
 });
+
 
 app.post("/sendMessage", (req, res) => {
   const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
@@ -236,6 +285,17 @@ app.post("/sendMessage", (req, res) => {
   const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
   db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    
+    // Broadcast the new message to all connected clients via Socket.io
+    io.emit("receiveMessage", {
+      my_row_id: results.insertId,       // Standardized property
+      message: messageToSend,
+      sender: loggedInUser,
+      destination: currentChannel,
+      messageType: currentChannelType,
+      timestamp: new Date().toISOString(),
+    });
+    
     res.status(200).json({ message: "Message sent"})
   });
 });
@@ -260,5 +320,5 @@ module.exports = app;
 
 if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 5001;
-  app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+  server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 }
