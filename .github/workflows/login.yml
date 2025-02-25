@@ -1,27 +1,27 @@
 name: Signup & Login Functionality
-
 on:
   pull_request:
     branches:
       - main  # Runs on pull requests to the main branch
-  workflow_dispatch:  # Allows manual triggering of the workflow
+      - ic-final
 
 jobs:
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2  # Checks out the repository code
-      - name: Use Node.js 16.x
+      - uses: actions/checkout@v2
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v2
         with:
-          node-version: 16.x
+          node-version: 22.x
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: package.json
       - name: Install dependencies
+        working-directory: ./frontend
         run: npm install
       - name: Run frontend manual tests
-        run: node frontend/tests/login.test.js  # Runs the frontend test script
-
+        run: node ./frontend/src/__tests__/login.test.js
+        
   backend-tests:
     runs-on: ubuntu-latest
     services:
