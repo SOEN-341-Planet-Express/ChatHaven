@@ -35,8 +35,8 @@ describe('User API tests for Login page', () => {
         jest.resetAllMocks();
     });
 
-    const sample_username = "user_username";
-    const sample_password = "user_password";
+    const sample_username = "users_username";
+    const sample_password = "users_password";
 
     test('Create a new user given user credentials', async () => {
         const response = await request(app)
