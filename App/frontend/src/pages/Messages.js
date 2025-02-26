@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import io from "socket.io-client";
+import { toast, Flip } from 'react-toastify';
 
 
 function Messages() {
@@ -125,7 +126,17 @@ function Messages() {
   
   const createChannel = async (e) => {
     e.preventDefault();
-    if (!channelName) return alert("Please enter a channel name.");
+    if (!channelName) return toast.info('Please enter a channel name', {
+      position: "top-center",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      transition: Flip,
+      });
     
     const response = await fetch("http://localhost:5001/createChannel", {
       method: "POST",
@@ -135,7 +146,17 @@ function Messages() {
     
     const data = await response.json();
     if (response.ok) {
-      alert("Channel Created!");
+      toast.success('Channel Created!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
       setChannelList([...channelList, channelName]);
       setChannelName("");
       setShowCreateModal(false);
@@ -146,8 +167,28 @@ function Messages() {
 
   const deleteChannel = async (e) => {
     e.preventDefault();
-    if (!channelName) return alert("Please enter a channel name.");
-    if (!channelList.includes(channelName)) return alert("Channel does not exist."); // <- Added check
+    if (!channelName) return toast.info('Please enter a channel name', {
+      position: "top-center",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      transition: Flip,
+      });
+    if (!channelList.includes(channelName)) return toast.error('Channel does not exist.', {
+      position: "top-center",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      transition: Flip,
+      })
     
     const response = await fetch("http://localhost:5001/deleteChannel", {
       method: "POST",
@@ -157,7 +198,17 @@ function Messages() {
   
     const data = await response.json();
     if (response.ok) {
-      alert("Channel Deleted!");
+      toast.success('Channel Deleted!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
       setChannelList(channelList.filter(channel => channel !== channelName));
       setChannelName("");
       setShowDeleteModal(false);
@@ -177,7 +228,17 @@ function Messages() {
     const data = await response.json()
 
     if (response.ok) {
-      alert("User assigned to channel!")
+      toast.success('User assigned to channel!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
       setShowAssignUser(false)
     } else {
       alert(data.message)
@@ -196,7 +257,17 @@ function Messages() {
     const data = await response.json()
 
     if (response.ok) {
-      alert("User removed from channel!")
+      toast.success('User removed from channel!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        }); 
       setShowRemoveUser(false)
     } else {
       alert(data.message)
@@ -275,7 +346,17 @@ function Messages() {
     const data = await response.json();
   
     if (response.ok) {
-      alert("Message Deleted!");
+      toast.success('Message Deleted!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
       // Remove the message using the correct property name
       setMessageList((prevMessages) => prevMessages.filter((msg) => msg.my_row_id !== messageId));
       loadMessages(messageId) // Reload page after message is sent

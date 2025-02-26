@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { toast, Flip } from 'react-toastify';
+
 
 function ForgotPassword() {
   const [username, setUsername] = useState("")
@@ -11,7 +13,17 @@ function ForgotPassword() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match")
+      toast.error('Passwords do not match', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });
       return
     }
 
@@ -24,7 +36,17 @@ function ForgotPassword() {
     const data = await response.json()
 
     if (response.ok) {
-      alert("Password Changed!")
+      toast.success('Password Changed!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });
       navigate("/Home")
     } else {
       alert(data.message)
