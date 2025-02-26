@@ -187,7 +187,7 @@ function Messages() {
       draggable: true,
       progress: undefined,
       theme: "dark",
-      transition: Bounce,
+      transition: Flip,
       })
     
     const response = await fetch("http://localhost:5001/deleteChannel", {
