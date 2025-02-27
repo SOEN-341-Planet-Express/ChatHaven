@@ -7,21 +7,67 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  frontend-tests:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [16.x, 18.x, 20.x, 22.x]  # Test frontend on multiple Node.js versions
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: package.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build project
+        run: npm run build
+      - name: Run frontend manual tests
+        run: npm test -- --verbose
+
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x, 22.x]  # Test backend on multiple Node.js versions
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=localhost --user=root --password=root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build project
+        run: npm run build --if-present
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass --silent; do
+            echo "Waiting for MySQL..."
+            sleep 5
+          done
+      - name: Run backend manual tests
+        run: npm test -- --verbose
