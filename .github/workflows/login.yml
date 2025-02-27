@@ -18,7 +18,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+      - name: Build project
+        run: npm run build
       - name: Run frontend manual tests
         run: node frontend/tests/login.test.js  # Runs the frontend test script
 
@@ -48,19 +50,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package.json
       - name: Install dependencies
-        run: npm install
-      - name: Ensure express.js works
-        run: npm install express
-      - name: Ensure mysql2 works
-        run: npm install mysql2
-      - name: Ensure cors works
-        run: npm install cors --save
-      - name: Ensure dotenv works
-        run: npm install dotenv
+        run: npm ci
       - name: Wait for MySQL
         run: |
           until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass; do
             sleep 1  # Waits for MySQL to be ready
           done
+      - name: Build project
+        run: npm run build
       - name: Run backend manual tests
         run: node backend/tests/login.test.js
