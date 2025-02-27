@@ -22,7 +22,7 @@ jobs:
       - name: Build project
         run: npm run build
       - name: Run frontend manual tests
-        run: node frontend/tests/login.test.js  # Runs the frontend test script
+        run: npm test -- --verbose
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -59,4 +59,4 @@ jobs:
       - name: Build project
         run: npm run build
       - name: Run backend manual tests
-        run: node backend/tests/login.test.js
+        run: npm test -- --verbose
