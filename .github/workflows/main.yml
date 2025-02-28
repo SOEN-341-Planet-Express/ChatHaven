@@ -69,4 +69,4 @@ jobs:
           done
           echo "MySQL is up and running!"
       - name: Run backend manual tests
-        run: npm run test -- --verbose App/backend/tests
+        run: npm run test -- --verbose --testPathPattern=App/backend/tests
