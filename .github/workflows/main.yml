@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run frontend manual tests
-        run: npm run test -- --verbose App/frontend/tests
+        run: npm test -- --verbose App/frontend/tests
 
   backend-tests:
     runs-on: ubuntu-latest
@@ -69,4 +69,4 @@ jobs:
           done
           echo "MySQL is up and running!"
       - name: Run backend manual tests
-        run: npm run test -- --verbose App/backend/tests
+        run: npm test -- --verbose App/backend/tests
