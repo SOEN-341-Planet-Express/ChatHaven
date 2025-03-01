@@ -77,4 +77,4 @@ jobs:
       - name: Run backend manual tests
         run: |
           cd App/backend/
-          npm run test -- --verbose --testPathPattern=App/backend/tests
+          npm run test -- --verbose --testPathPattern=tests
