@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { toast, Flip } from 'react-toastify';
+
 
 function Signup() {
   const [username, setUsername] = useState("")
@@ -11,7 +13,17 @@ function Signup() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match")
+      toast.error('Passwords do not match', {
+            position: "top-center",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
+            transition: Flip,
+            });
       return
     }
 
@@ -25,6 +37,17 @@ function Signup() {
 
     if (response.ok) {
       alert("Account Created!")
+      toast.success('Account Created!', {
+            position: "top-center",
+            autoClose: 2000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
+            transition: Flip,
+            })
       navigate("/Home")
     } else {
       alert(data.message)
