@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import io from "socket.io-client";
+import { useEffect, useState, useRef } from "react";
 import { toast, Flip } from 'react-toastify';
-
 
 function Messages() {
   const navigate = useNavigate();
@@ -22,7 +22,15 @@ function Messages() {
   const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
   const [socket, setSocket] = useState(null);
+  const messagesEndRef = useRef(null); 
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messageList]);
 
 
   useEffect(() => {
@@ -306,32 +314,21 @@ function Messages() {
   
   function listOutChannels(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        <button 
-          onClick={(e) => {
-
-            setCurrentChannel(item);
-            setCurrentChannelType('groupchat');
-
-          }} 
-          className="w-full text-left p-2">
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
+        setCurrentChannel(item);
+        setCurrentChannelType('groupchat');
+      }}>
           {item}
-        </button>
       </li>
     ));
   }
 
   function listOutDMs(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        <button 
-          onClick={(e) => {
-            setCurrentChannel(item);setCurrentChannelType('dm');
-          }} 
-          className="w-full text-left p-2"
-        >
-          {item}
-        </button>
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
+        setCurrentChannel(item);setCurrentChannelType('dm');
+      }} >
+          {item}  
       </li>
     ));
   }
@@ -381,7 +378,7 @@ function Messages() {
           <div>
             <button
               onClick={() => deleteMessage(item.my_row_id)}
-              className="hover:bg-red-700 px-2 py-1"
+              className="rounded-lg hover:bg-red-700 px-2 py-1"
             >
               ❌
             </button>
@@ -391,7 +388,11 @@ function Messages() {
     ));
   }
   
-
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      sendMessage(e);
+    }
+  };
 
 
   return (
@@ -456,17 +457,23 @@ function Messages() {
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
           </h2>
+          
+          <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
+          <div ref={messagesEndRef} /> {                      }
           </div>
+          </div>
+          
           <div className="mt-4 flex items-center">
-            <input
-              type="text"
-              onChange={(e) => setMessageToSend(e.target.value)}
-              
-              placeholder="Type a message..."
-              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
-            />
+          <input
+                type="text"
+                value={messageToSend}
+                onChange={(e) => setMessageToSend(e.target.value)}
+                onKeyDown={handleKeyDown} // Add this line
+                placeholder="Type a message..."
+                className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
+              />
             <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>Send</button>
           </div>
           
