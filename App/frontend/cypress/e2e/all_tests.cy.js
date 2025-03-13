@@ -44,10 +44,6 @@ describe('Login Tests', () => {
     cy.visit('http://localhost:3000/ForgotPassword')
     
     const new_password = Math.random() * 1000
-
-    cy.window().then((win) => {
-      cy.spy(win, 'alert').as('alertSpy')
-    })
     
     cy.get('#username').type("user_username")
     cy.get('#password').type(new_password)
@@ -55,7 +51,15 @@ describe('Login Tests', () => {
 
     cy.get('button[type="submit"]').click()
 
-    cy.get('@alertSpy').should('have.been.calledWith', 'Password Changed!')
+    cy.wait(1000)
+
+    cy.get('#username').type("user_username")
+    cy.get('#password').type(new_password)
+    cy.get('button[type="submit"]').click()
+
+    cy.wait(4000).window().then((win) => {
+      expect(win.localStorage.getItem('loggedInUser')).to.equal('user_username')
+    })
   })
 })
 
@@ -72,15 +76,16 @@ describe('Admin Privileges Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
-    cy.window().then((win) => {
-      cy.spy(win, 'alert').as('alertSpy')
-    })
+   // cy.window().then((win) => {
+    //  cy.spy(win, 'alert').as('alertSpy')
+   // })
 
     cy.contains('button', 'Create').click()
     cy.get('input[data-testid="Channel-Name-Input"]').type('Test Channel')
     cy.get('button[data-testid="Channel-Name-Submit"]').click()
 
-    cy.get('@alertSpy').should('have.been.calledWith', 'Channel Created!')
+    cy.contains('li', 'Test Channel').should('be.visible');
+  //  cy.get('@alertSpy').should('have.been.calledWith', 'Channel Created!')
   })
   it('Deletes a test channel', () => {
     cy.visit('http://localhost:3000/Home')
@@ -93,15 +98,17 @@ describe('Admin Privileges Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
-    cy.window().then((win) => {
-      cy.spy(win, 'alert').as('alertSpy')
-    })
+    //cy.window().then((win) => {
+    //  cy.spy(win, 'alert').as('alertSpy')
+    //})
 
     cy.contains('button', 'Delete').click()
     cy.get('input[data-testid="Delete-Channel-Input"]').type('Test Channel')
     cy.get('button[data-testid="Delete-Channel-Submit"]').click()
 
-    cy.get('@alertSpy').should('have.been.calledWith', 'Channel Deleted!')
+    cy.contains('li', 'Test Channel').should('not.be.visible');
+
+    //cy.get('@alertSpy').should('have.been.calledWith', 'Channel Deleted!')
   })
   it('Sends and deletes a message', () => {
     cy.visit('http://localhost:3000/Home')
