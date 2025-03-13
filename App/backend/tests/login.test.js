@@ -35,8 +35,8 @@ describe('User API tests for Login page', () => {
         jest.resetAllMocks();
     });
 
-    const sample_username = str(Math.random() * 1000);
-    const sample_password = str(Math.random() * 1000);
+    const sample_username = Math.random() * 1000;
+    const sample_password = Math.random() * 1000;
 
     test('Create a new user given user credentials', async () => {
         const response = await request(app)
