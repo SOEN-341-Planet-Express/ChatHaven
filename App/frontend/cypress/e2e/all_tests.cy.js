@@ -106,7 +106,7 @@ describe('Admin Privileges Tests', () => {
     cy.get('input[data-testid="Delete-Channel-Input"]').type('Test Channel')
     cy.get('button[data-testid="Delete-Channel-Submit"]').click()
 
-    cy.contains('li', 'Test Channel').should('not.be.visible');
+    cy.contains('li', 'Test Channel').should('not.exist');
 
     //cy.get('@alertSpy').should('have.been.calledWith', 'Channel Deleted!')
   })

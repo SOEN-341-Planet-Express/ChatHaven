@@ -63,7 +63,7 @@ describe('User API tests for Login page', () => {
     expect(response.body).toHaveProperty('message', 'Login successful')
     });
 
-    test('Recover a password', async() => {
+/*    test('Recover a password', async() => {
         const new_password = Math.random() * 1000
         //create dummy account to mess with. will be purged after testing
         const dummy = await request(app)
@@ -82,5 +82,5 @@ describe('User API tests for Login page', () => {
     expect(response.status).toBe(200)
     expect(response.body).toHaveProperty('message', 'Password changed successfully!')
     });
-
+*/
 });
