@@ -64,6 +64,7 @@ describe('User API tests for Login page', () => {
     });
 
     test('Recover a password', async() => {
+        const new_password = Math.random() * 1000
         //create dummy account to mess with. will be purged after testing
         const dummy = await request(app)
         .post('/register').send({
@@ -75,7 +76,7 @@ describe('User API tests for Login page', () => {
         .post('/forgotpassword')
         .send({
             username: sample_username,
-            password: sample_password
+            password: new_password
         })
 
     expect(response.status).toBe(200)

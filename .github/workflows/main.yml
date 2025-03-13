@@ -43,9 +43,6 @@ jobs:
           cd App/frontend/
           nohup npm start > frontend.log 2>&1 &  # Run frontend in background
 
-      - name: Wait for Services
-        run: |
-          npx wait-on http://localhost:5001
 
       - name: Run Cypress Tests
         run: |
