@@ -15,24 +15,42 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: package.json
-      - name: Install dependencies
+
+      - name: Install frontend dependencies
         run: |
           cd App/frontend/
           npm ci
-      - name: start backend
+
+      - name: Install backend dependencies
         run: |
           cd App/backend/
-          node server.js
-      - name: Run frontend manual tests
+          npm ci
+
+      - name: Start Backend
+        run: |
+          cd App/backend/
+          nohup node server.js > backend.log 2>&1 &  # Run backend in background
+
+      - name: Start Frontend
         run: |
           cd App/frontend/
-          npm start
+          nohup npm start > frontend.log 2>&1 &  # Run frontend in background
+
+      - name: Wait for Services
+        run: |
+          npx wait-on http://localhost:3000
+          npx wait-on http://localhost:5001
+
+      - name: Run Cypress Tests
+        run: |
+          cd App/frontend/
           npx cypress run --spec "cypress/e2e/**/*.cy.js"
 
   backend-tests:
@@ -71,10 +89,6 @@ jobs:
           cd App/backend/
           npm ci
           node server.js
-      - name: start frontend
-        run: |
-            cd App/frontend
-            npm start
       - name: Wait for MySQL
         run: |
           echo "Waiting for MySQL to be ready..."
