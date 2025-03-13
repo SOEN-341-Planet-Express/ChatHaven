@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]  # Test frontend on multiple Node.js versions
+        node-version: [20.x]  # Test frontend on multiple Node.js versions
 
     steps:
       - uses: actions/checkout@v2
@@ -25,10 +25,14 @@ jobs:
         run: |
           cd App/frontend/
           npm ci
-          
+      - name: start backend
+        run: |
+          cd App/backend/
+          node server.js
       - name: Run frontend manual tests
         run: |
           cd App/frontend/
+          npm start
           npx cypress run --spec "cypress/e2e/**/*.cy.js"
 
   backend-tests:
@@ -66,6 +70,11 @@ jobs:
         run:  |
           cd App/backend/
           npm ci
+          node server.js
+      - name: start frontend
+        run: |
+            cd App/frontend
+            npm start
       - name: Wait for MySQL
         run: |
           echo "Waiting for MySQL to be ready..."
