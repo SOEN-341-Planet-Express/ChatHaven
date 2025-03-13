@@ -306,7 +306,7 @@ app.post("/forgotpassword", (req, res) => {
 
   const mysql = "UPDATE users SET password = ? WHERE username = ?";
   db.query(mysql, [password, username], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
     
     if (results.affectedRows === 0) return res.status(401).json({ message: "Invalid username entry :/"});
 
