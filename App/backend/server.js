@@ -316,6 +316,22 @@ app.post("/forgotpassword", (req, res) => {
   });
 });
 
+// Delete User
+app.post("/deleteUser", (req, res) => {
+  const { username } = req.body;
+
+  const mysql = "DELETE FROM users WHERE username = ?;";
+  db.query(mysql, [username], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
+    
+    if (results.affectedRows === 0) return res.status(401).json({ message: "Invalid username entry :/"});
+
+    
+
+    res.status(200).json({ message: "User deleted successfully!"})
+  });
+});
+
 module.exports = app;
 
 if (process.env.NODE_ENV !== 'test') {
