@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import io from "socket.io-client";
@@ -16,6 +15,7 @@ function Messages() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAssignUser, setShowAssignUser] = useState(false);
   const [showRemoveUser, setShowRemoveUser] = useState(false);
+  const [showDeleteUser, setShowDeleteUser] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
   const [currentChannelType, setCurrentChannelType] = useState("")
@@ -164,7 +164,7 @@ function Messages() {
         progress: undefined,
         theme: "dark",
         transition: Flip,
-        });        
+        });       
       setChannelList([...channelList, channelName]);
       setChannelName("");
       setShowCreateModal(false);
@@ -176,27 +176,27 @@ function Messages() {
   const deleteChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return toast.info('Please enter a channel name', {
-      position: "top-center",
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "dark",
-      transition: Flip,
-      });
-    if (!channelList.includes(channelName)) return toast.error('Channel does not exist.', {
-      position: "top-center",
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "dark",
-      transition: Flip,
-      })
+    position: "top-center",
+    autoClose: 2000,
+    hideProgressBar: false,
+    closeOnClick: false,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: "dark",
+    transition: Flip,
+    });
+  if (!channelList.includes(channelName)) return toast.error('Channel does not exist.', {
+    position: "top-center",
+    autoClose: 2000,
+    hideProgressBar: false,
+    closeOnClick: false,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: "dark",
+    transition: Flip,
+    })
     
     const response = await fetch("http://localhost:5001/deleteChannel", {
       method: "POST",
@@ -216,7 +216,7 @@ function Messages() {
         progress: undefined,
         theme: "dark",
         transition: Flip,
-        });        
+        });      
       setChannelList(channelList.filter(channel => channel !== channelName));
       setChannelName("");
       setShowDeleteModal(false);
@@ -246,7 +246,7 @@ function Messages() {
         progress: undefined,
         theme: "dark",
         transition: Flip,
-        });        
+        });       
       setShowAssignUser(false)
     } else {
       alert(data.message)
@@ -282,6 +282,26 @@ function Messages() {
     }
   }
 
+  const deleteUser = async (e) => {
+    e.preventDefault()
+    
+    const response = await fetch("http://localhost:5001/deleteUser", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      alert("User Deleted!")
+      setShowDeleteUser(false)
+    } else {
+      alert(data.message)
+    }
+    loadMessages()
+  }
+
   const loadMessages = async () => {
 
     const response = await fetch("http://localhost:5001/loadMessages", {
@@ -314,21 +334,32 @@ function Messages() {
   
   function listOutChannels(items) {
     return items.map((item, index) => (
-      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
-        setCurrentChannel(item);
-        setCurrentChannelType('groupchat');
-      }}>
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+        <button 
+          onClick={(e) => {
+
+            setCurrentChannel(item);
+            setCurrentChannelType('groupchat');
+
+          }} 
+          className="w-full text-left p-2">
           {item}
+        </button>
       </li>
     ));
   }
 
   function listOutDMs(items) {
     return items.map((item, index) => (
-      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
-        setCurrentChannel(item);setCurrentChannelType('dm');
-      }} >
-          {item}  
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+        <button 
+          onClick={(e) => {
+            setCurrentChannel(item);setCurrentChannelType('dm');
+          }} 
+          className="w-full text-left p-2"
+        >
+          {item}
+        </button>
       </li>
     ));
   }
@@ -465,11 +496,24 @@ buttons.forEach((btn) => {
           <h2 className="flex justify-between text-xl font-semibold mb-4">Messages
           {/* admin buttons*/}
           {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
-          {isAdmin=="true" &&
+          {isAdmin == "true" && (
+          <>
+            <button
+              onClick={() => setShowAssignUser(true)}
+              className="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
+            >
+              Assign New Users
+            </button>
 
-          <button onClick={() =>setShowAssignUser(true)} className = "bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >Assign New Users
-            </button>}
+            <button
+              onClick={() => setShowDeleteUser(true)}
+              className="bg-red-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
+            >
+              Delete a User
+            </button>
+          </>
+        )}
+          
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
@@ -488,9 +532,9 @@ buttons.forEach((btn) => {
                 value={messageToSend}
                 onChange={(e) => setMessageToSend(e.target.value)}
                 onKeyDown={handleKeyDown} // Add this line
-                placeholder="Type a message..."
-                className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
-              />
+              placeholder="Type a message..."
+              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
+            />
             <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>Send</button>
           </div>
           
@@ -552,6 +596,19 @@ buttons.forEach((btn) => {
           </div>
         </div>
       )}
+
+        {showDeleteUser && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                  <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 className="text-xl mb-4">Enter Username</h2>
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="User to delete" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+                    <div className="mt-4 flex justify-between">
+                    <button onClick={deleteUser} className="bg-green-600 px-4 py-2 rounded-lg">Delete User</button>
+                    <button onClick={() => setShowDeleteUser(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              )}
       
     </div>
   );
