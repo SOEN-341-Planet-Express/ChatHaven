@@ -314,7 +314,7 @@ function Messages() {
   
   function listOutChannels(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
+      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
         setCurrentChannel(item);
         setCurrentChannelType('groupchat');
       }}>
@@ -325,7 +325,7 @@ function Messages() {
 
   function listOutDMs(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
+      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
         setCurrentChannel(item);setCurrentChannelType('dm');
       }} >
           {item}  
@@ -394,6 +394,23 @@ function Messages() {
     }
   };
 
+//This code handles changing the color of the currently selected chanel
+const defaultColor = 'bg-gray-600'; 
+const activeColor = 'bg-gray-500'; 
+const buttons = document.querySelectorAll('.btn');
+
+buttons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    
+    buttons.forEach((b) => {
+      b.classList.add(defaultColor);
+      b.classList.remove(activeColor);
+    });
+    
+    btn.classList.remove(defaultColor);
+    btn.classList.add(activeColor);
+  });
+});
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
