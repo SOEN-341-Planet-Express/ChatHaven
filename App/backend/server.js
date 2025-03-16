@@ -83,6 +83,12 @@ app.post("/register", (req, res) => {
     const insertUserSQL = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
     db.query(insertUserSQL, [username, password, "member"], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
+    });
+
+    //Add user permission for general channel
+    const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES ('general', ?)";
+    db.query(addPermissionSQL, [username], (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
       res.status(201).json({ message: "Account Created" });
     });
   });
@@ -266,7 +272,6 @@ app.post("/loadMessages", (req, res) => {
 });
 
 // Delete a message
-// Delete a message
 app.post("/deleteMessage", (req, res) => {
   const sql = "DELETE FROM messages WHERE my_row_id = ?";
   db.query(sql, [req.body.id], (err, result) => {
@@ -315,6 +320,44 @@ app.post("/forgotpassword", (req, res) => {
     res.status(200).json({ message: "Password changed successfully!"})
   });
 });
+
+//Process invite
+app.post("/processInvite", (req, res) => {
+  //const { username, password } = req.body;
+  const invitee = 'test'
+  const owner = 'aaa'
+  const channel = 'test'
+  const accepted = 'false'
+
+  const mysql = "DELETE FROM channel_invites WHERE invitee = (?) AND owner = (?) and channel = (?)";
+  db.query(mysql, [invitee, owner, channel], (err, results) => {
+  });
+
+  if(accepted == 'true'){
+    const mysql2 = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
+  db.query(mysql2, [channel, invitee], (err, results) => {
+    res.status(200).json({ message: "Invite Accepted"})
+  });
+  } else {
+    res.status(200).json({ message: "Invite Denied"})
+  }
+});
+
+//Send invite
+app.post("/sendInvite", (req, res) => {
+  //const { username, password } = req.body;
+  const invitee = 'test'
+  const owner = 'aaa'
+  const channel = 'test'
+
+  const mysql = "INSERT INTO channel_invites (invitee, owner, channel) VALUES (?, ?, ?)";
+  db.query(mysql, [invitee, owner, channel], (err, results) => {
+    res.status(200).json({ message: "Invite Sent"})
+  });
+  
+});
+
+
 
 module.exports = app;
 

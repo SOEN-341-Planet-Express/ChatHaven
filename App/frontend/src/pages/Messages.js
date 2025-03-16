@@ -25,7 +25,7 @@ function Messages() {
   const messagesEndRef = useRef(null); 
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({block: "end"});
   };
 
   useEffect(() => {
@@ -394,6 +394,64 @@ function Messages() {
     }
   };
 
+  //Processing invite accept/deny
+  const CHANGEME = 'placeholdervalue';
+  const processInvite = async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch("http://localhost:5001/processInvite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ CHANGEME }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      toast.success(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
+    } else {
+      alert(data.message);
+    }
+  };
+
+  //Processing invite accept/deny
+  const CHANGEME2 = 'placeholdervalue';
+  const sendInvite = async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch("http://localhost:5001/sendInvite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ CHANGEME2 }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      toast.success(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
+    } else {
+      alert(data.message);
+    }
+  };
+
 //This code handles changing the color of the currently selected chanel
 const defaultColor = 'bg-gray-600'; 
 const activeColor = 'bg-gray-500'; 
@@ -401,12 +459,12 @@ const buttons = document.querySelectorAll('.btn');
 
 buttons.forEach((btn) => {
   btn.addEventListener('click', () => {
-    
+    // Rest all button colors
     buttons.forEach((b) => {
       b.classList.add(defaultColor);
       b.classList.remove(activeColor);
     });
-    
+    // Add active color on the clicked button, remove default color
     btn.classList.remove(defaultColor);
     btn.classList.add(activeColor);
   });
@@ -430,6 +488,7 @@ buttons.forEach((btn) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
+            <button onClick={sendInvite}>test button</button>
           </div>
           <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
             className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
@@ -445,8 +504,8 @@ buttons.forEach((btn) => {
             
             {isAdmin === "true" && (
               <div className="flex justify-between mb-4">
-                <button onClick={() => setShowCreateModal(true)}  className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
-                <button onClick={() => setShowDeleteModal(true)}  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
+                <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
+                <button onClick={() => setShowDeleteModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
             <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
@@ -503,9 +562,9 @@ buttons.forEach((btn) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-4">Enter Channel Name</h2>
-            <input type="text" data-testid="Channel-Name-Input" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={createChannel} data-testid="Channel-Name-Submit" className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
+              <button onClick={createChannel} className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
               <button onClick={() => setShowCreateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
@@ -516,9 +575,9 @@ buttons.forEach((btn) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-4">Enter Channel to Delete</h2>
-            <input type="text" data-testid = "Delete-Channel-Input" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={deleteChannel} data-testid="Delete-Channel-Submit" className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
+              <button onClick={deleteChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
               <button onClick={() => setShowDeleteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
