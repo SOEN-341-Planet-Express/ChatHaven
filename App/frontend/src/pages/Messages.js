@@ -3,6 +3,7 @@ import React from "react";
 import io from "socket.io-client";
 import { useEffect, useState, useRef } from "react";
 import { toast, Flip } from 'react-toastify';
+import Picker from "emoji-picker-react";
 
 function Messages() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ function Messages() {
   const [showAssignUser, setShowAssignUser] = useState(false);
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [showDeleteUser, setShowDeleteUser] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
   const [currentChannelType, setCurrentChannelType] = useState("")
@@ -129,8 +131,6 @@ function Messages() {
     });
     return () => socket.off("deleteMessage");
   }, [socket]);
-  
-  
   
   const createChannel = async (e) => {
     e.preventDefault();
@@ -418,11 +418,15 @@ function Messages() {
       </div>
     ));
   }
-  
+   
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       sendMessage(e);
     }
+  };
+
+    const onEmojiClick = (emojiData) => {
+    setMessageToSend((prev) => prev + emojiData.emoji);
   };
 
 //This code handles changing the color of the currently selected chanel
@@ -520,13 +524,26 @@ buttons.forEach((btn) => {
           </h2>
           
           <div className="space-y-4">
-          <div className="bg-gray-700 rounded-lg p-4 h-96 overflow-y-auto">
+          <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           <div ref={messagesEndRef} /> {                      }
           </div>
           </div>
-          
-          <div className="mt-4 flex items-center">
+
+          <div className="mt-2 flex items-center">
+
+          <div className="relative">
+            <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="bg-gray-700 border border-gray-600 p-3 mr-2 rounded-lg">
+              😀
+            </button>
+
+            {showEmojiPicker && (
+              <div className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50">
+                <Picker onEmojiClick={onEmojiClick} />
+              </div>
+            )}
+          </div>
+
           <input
                 type="text"
                 value={messageToSend}
@@ -535,9 +552,12 @@ buttons.forEach((btn) => {
               placeholder="Type a message..."
               className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
             />
-            <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>Send</button>
+         
+          <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>
+            Send
+          </button>
           </div>
-          
+
           </div>
         </div>
         
