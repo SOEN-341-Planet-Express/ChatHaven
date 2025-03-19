@@ -73,6 +73,7 @@ app.post("/register", (req, res) => {
   // Check if username exists
   const checkUserSQL = "SELECT * FROM users WHERE username = ?";
   db.query(checkUserSQL, [username], (err, results) => {
+
     if (err) return res.status(500).json({ error: "DB error" });
 
     if (results.length > 0) {
@@ -265,7 +266,6 @@ app.post("/loadMessages", (req, res) => {
 
 });
 
-// Delete a message
 // Delete a message
 app.post("/deleteMessage", (req, res) => {
   const sql = "DELETE FROM messages WHERE my_row_id = ?";
