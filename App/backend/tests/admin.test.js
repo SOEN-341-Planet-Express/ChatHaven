@@ -15,7 +15,7 @@ const dbConfig = {
   
 
 
-describe('User API tests for user privilege system', () => {
+describe('API tests for user privilege system', () => {
     let db;
 
     beforeAll(async () => {
