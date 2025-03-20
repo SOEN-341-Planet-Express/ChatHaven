@@ -113,7 +113,7 @@ app.post("/login", (req, res) => {
 
 //Create Channel
 app.post("/createChannel", (req, res) => {
-  const {channelName}  = req.body;
+  const {channelName, loggedInUser}  = req.body;
 
   // Check if channel already exists
   const checkChannelSQL = "SELECT * FROM channel_list WHERE channel_name = ?";
@@ -126,8 +126,8 @@ app.post("/createChannel", (req, res) => {
     }  
 
     //Updates the table of channels to contain the newest channel
-    const updateChannelListSQL = "INSERT INTO channel_list (channel_name) VALUES (?)";
-    db.query(updateChannelListSQL, channelName, (err, result) => {
+    const updateChannelListSQL = "INSERT INTO channel_list (channel_name, creator) VALUES (?, ?)";
+    db.query(updateChannelListSQL, [channelName, loggedInUser], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
 
@@ -142,6 +142,11 @@ app.post("/deleteChannel", (req, res) => {
     //Updates the table of channels to not contain the deleted channel
     const updateChannelListSQL = "DELETE FROM channel_list WHERE channel_name=?";
     db.query(updateChannelListSQL, channelName, (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
+    });
+
+    const eraseMessagesSQL = "DELETE FROM messages WHERE destination=? AND message_type='groupchat'";
+    db.query(eraseMessagesSQL, channelName, (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
     res.status(201).json({ message: "Channel Deleted" });
@@ -249,6 +254,58 @@ app.post("/getPrivateMessage", (req, res) => {
   });
 });
 
+//Get the requests to join that you sent which are still pending
+app.post("/getSentRequests", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE invitee = ? AND type='request'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+  
+    res.status(200).json({ message: results });
+  });
+});
+
+//Get the requests to join that you received which are still pending
+app.post("/getReceivedRequests", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE owner = ? AND type='request'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    res.status(200).json({ message: results });
+  });
+});
+
+//Get list of invites you have sent
+app.post("/getSentInvites", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE owner = ? AND type='invite'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    res.status(200).json({ message: results });
+  });
+});
+
+//Get list of invites you have received
+app.post("/getReceivedInvites", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE invitee = ? AND type='invite'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    res.status(200).json({ message: results });
+  });
+});
+
 //Load messages
 
 app.post("/loadMessages", (req, res) => {
@@ -284,6 +341,7 @@ app.post("/deleteMessage", (req, res) => {
 });
 
 
+// Send a message
 app.post("/sendMessage", (req, res) => {
   const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
 
@@ -346,12 +404,14 @@ app.post("/processInvite", (req, res) => {
 //Send invite
 app.post("/sendInvite", (req, res) => {
   //const { username, password } = req.body;
-  const invitee = 'test'
-  const owner = 'aaa'
+  const invitee = 'aaa'
+  const owner = 'thekillerturkey'
   const channel = 'test'
+  //const type = 'invite'
+  const type = 'request'
 
-  const mysql = "INSERT INTO channel_invites (invitee, owner, channel) VALUES (?, ?, ?)";
-  db.query(mysql, [invitee, owner, channel], (err, results) => {
+  const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, ?)";
+  db.query(mysql, [invitee, owner, channel, type], (err, results) => {
     res.status(200).json({ message: "Invite Sent"})
   });
   

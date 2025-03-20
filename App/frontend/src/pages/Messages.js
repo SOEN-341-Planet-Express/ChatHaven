@@ -11,6 +11,10 @@ function Messages() {
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
   const [privateMessageList, setPrivateMessageList] = useState([]);
+  const [sentRequestList, setSentRequestList] = useState([]);
+  const [receivedRequestList, setReceivedRequestList] = useState([]);
+  const [sentInviteList, setSentInviteList] = useState([]);
+  const [receivedInviteList, setReceivedInviteList] = useState([]);
   const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -52,6 +56,7 @@ function Messages() {
       }
     }
 
+    //Load channels
     async function getChannels() {
       const response = await fetch("http://localhost:5001/getChannels", {
         method: "POST",
@@ -67,6 +72,7 @@ function Messages() {
       }
     }
 
+    //Load DM messages
     async function getDms() {
       const response = await fetch("http://localhost:5001/getPrivateMessage", {
         method: "POST",
@@ -82,11 +88,78 @@ function Messages() {
       }
     }
 
+    //Load requests sent to channel creator
+    async function getSentRequests() {
+      const response = await fetch("http://localhost:5001/getSentRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSentRequestList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load pending requests to your channels
+    async function getReceivedRequests() {
+      const response = await fetch("http://localhost:5001/getReceivedRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setReceivedRequestList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load invites sent to users
+    async function getSentInvites() {
+      const response = await fetch("http://localhost:5001/getSentInvites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSentInviteList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load invites received from channel creators
+    async function getReceivedInvites() {
+      const response = await fetch("http://localhost:5001/getReceivedInvites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setReceivedInviteList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
 
     if(currentChannel || currentChannelType){
       loadMessages()
     }
 
+    getReceivedInvites();
+    getSentInvites();
+    getReceivedRequests();
+    getSentRequests();
     getDms();
     checkAdmin();
     getChannels();
@@ -149,7 +222,7 @@ function Messages() {
     const response = await fetch("http://localhost:5001/createChannel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelName }),
+      body: JSON.stringify({ channelName, loggedInUser }),
     });
     
     const data = await response.json();
@@ -333,6 +406,38 @@ function Messages() {
     ));
   }
 
+  function listOutSentRequests(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          You have asked user {item.owner} to join channel {item.channel}  
+      </li>
+    ));
+  }
+
+  function listOutReceivedRequests(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          User {item.invitee} has asked to join channel {item.channel}  
+      </li>
+    ));
+  }
+
+  function listOutSentInvites(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          You have asked {item.invitee} to join channel {item.channel}  
+      </li>
+    ));
+  }
+
+  function listOutReceivedInvites(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          User {item.owner} has invited you to join channel {item.channel}  
+      </li>
+    ));
+  }
+
   const deleteMessage = async (messageId) => {
     const response = await fetch("http://localhost:5001/deleteMessage", {
       method: "POST",
@@ -423,7 +528,7 @@ function Messages() {
     }
   };
 
-  //Processing invite accept/deny
+  //Sending invite
   const CHANGEME2 = 'placeholdervalue';
   const sendInvite = async (e) => {
     e.preventDefault();
@@ -488,7 +593,9 @@ buttons.forEach((btn) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
-            <button onClick={sendInvite}>test button</button>
+            <button onClick={sendInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
+            <button onClick={processInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">process invite button</button>
+            
           </div>
           <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
             className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
@@ -513,10 +620,7 @@ buttons.forEach((btn) => {
 
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
             <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>
-
-
           
-         
           </div>
 
           <div className="w-3/4 p-4">
@@ -554,9 +658,20 @@ buttons.forEach((btn) => {
           </div>
           
           </div>
+          <div>
+          Sent requests
+          <ul className="space-y-2 mb-4">{listOutSentRequests(sentRequestList)}</ul>
+          Received requests
+          <ul className="space-y-2 mb-4">{listOutReceivedRequests(receivedRequestList)}</ul>
+          Sent invites
+          <ul className="space-y-2 mb-4">{listOutSentInvites(sentInviteList)}</ul>
+          Received invites
+          <ul className="space-y-2 mb-4">{listOutReceivedInvites(receivedInviteList)}</ul>
+          </div>
         </div>
         
       </div>
+      
 
       {showCreateModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
