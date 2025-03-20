@@ -7,14 +7,14 @@ const dbConfig = {
     host: "srvd12ed324fsd5t34r34.mysql.database.azure.com",
     user: "rtdsfasdf23r2eddva32",
     password: "kPnWV7@@m%",  
-    database: "chathaven_DB",
+    database: "chathaven_db_new",
     port: 3306,
     ssl: { rejectUnauthorized: true },
   };
   
 
 
-describe('User API tests for Login page', () => {
+describe('API tests for Login actions', () => {
     let db;
 
     beforeAll(async () => {
@@ -27,16 +27,17 @@ describe('User API tests for Login page', () => {
     });
 
     beforeEach(() => {
+        
         jest.clearAllMocks();
     });
 
     afterEach(async () => {
-
         jest.resetAllMocks();
     });
 
-    const sample_username = Math.random() * 1000;
-    const sample_password = Math.random() * 1000;
+    const sample_username = "tester_username";
+    const sample_password = "test_password";
+    const new_password = "new_password";
 
     test('Create a new user given user credentials', async () => {
         const response = await request(app)
@@ -63,14 +64,7 @@ describe('User API tests for Login page', () => {
     expect(response.body).toHaveProperty('message', 'Login successful')
     });
 
-/*    test('Recover a password', async() => {
-        const new_password = Math.random() * 1000
-        //create dummy account to mess with. will be purged after testing
-        const dummy = await request(app)
-        .post('/register').send({
-            username: sample_username,
-            password: sample_password
-        });
+    test('Recover a password', async() => {
 
         const response = await request(app)
         .post('/forgotpassword')
@@ -81,6 +75,7 @@ describe('User API tests for Login page', () => {
 
     expect(response.status).toBe(200)
     expect(response.body).toHaveProperty('message', 'Password changed successfully!')
+    
     });
-*/
+
 });

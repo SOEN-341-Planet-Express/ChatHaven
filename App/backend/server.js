@@ -73,6 +73,7 @@ app.post("/register", (req, res) => {
   // Check if username exists
   const checkUserSQL = "SELECT * FROM users WHERE username = ?";
   db.query(checkUserSQL, [username], (err, results) => {
+
     if (err) return res.status(500).json({ error: "DB error" });
 
     if (results.length > 0) {
@@ -379,6 +380,7 @@ app.post("/forgotpassword", (req, res) => {
   });
 });
 
+
 //Process invite
 app.post("/processInvite", (req, res) => {
   //const { username, password } = req.body;
@@ -417,6 +419,23 @@ app.post("/sendInvite", (req, res) => {
   
 });
 
+
+
+// Delete User
+app.post("/deleteUser", (req, res) => {
+  const { username } = req.body;
+
+  const mysql = "DELETE FROM users WHERE username = ?;";
+  db.query(mysql, [username], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
+    
+    if (results.affectedRows === 0) return res.status(401).json({ message: "Invalid username entry :/"});
+
+    
+
+    res.status(200).json({ message: "User deleted successfully!"})
+  });
+});
 
 
 module.exports = app;
