@@ -178,7 +178,7 @@ describe('Message and Channel System Functionality Tests', () => {
     cy.get('button').contains('TEST3').click()
     cy.contains('p', 'Test Message').should('exist')
 
-    cy.get('button').contains('test2').click()
+    cy.get('button').contains('general').click()
     cy.contains('p', 'Test Message').should('not.exist')
     cy.contains('p', 'ad').should('exist')
 
