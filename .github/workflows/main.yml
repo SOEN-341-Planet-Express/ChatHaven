@@ -1,0 +1,98 @@
+name: Run Test Suites
+
+on:
+  pull_request:
+    branches:
+      - main  # Runs on pull requests to the main branch
+
+jobs:
+  frontend-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]  # Test frontend on multiple Node.js versions
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: package.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd App/frontend/
+          npm ci
+
+      - name: Install backend dependencies
+        run: |
+          cd App/backend/
+          npm ci
+
+      - name: Start Backend
+        run: |
+          cd App/backend/
+          nohup node server.js > backend.log 2>&1 &  # Run backend in background
+
+      - name: Start Frontend
+        run: |
+          cd App/frontend/
+          nohup npm start > frontend.log 2>&1 &  # Run frontend in background
+
+
+      - name: Run Cypress Tests
+        run: |
+          cd App/frontend/
+          npx cypress run --spec "cypress/e2e/**/*.cy.js"
+
+  backend-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]  # Test backend on multiple Node.js versions
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=localhost --user=root --password=root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: package.json
+      - name: Install dependencies
+        run:  |
+          cd App/backend/
+          npm ci
+      - name: Wait for MySQL
+        run: |
+          echo "Waiting for MySQL to be ready..."
+          until mysqladmin ping --host=127.0.0.1 --user=test_user --password=test_pass --silent; do
+            echo "Still waiting for MySQL..."
+            sleep 2
+          done
+          echo "MySQL is up and running!"
+      - name: Run backend manual tests
+        run: |
+          cd App/backend/
+          npm run test -- --verbose --testPathPattern=tests
