@@ -11,6 +11,9 @@ function Messages() {
   const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showQuitModal, setShowQuitModal] = useState(false);
+  const [showCreatePrivateModal, setShowCreatePrivateModal] = useState(false);
   const [showAssignUser, setShowAssignUser] = useState(false);
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [channelName, setChannelName] = useState("");
@@ -18,7 +21,8 @@ function Messages() {
   const currentChannelType = 'groupchat'
   const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
-
+  const [showMessageList, setShowMessageList] = useState(false);
+  const [showChannelList, setShowChannelList] = useState(true);
 
 
   useEffect(() => {
@@ -121,6 +125,23 @@ function Messages() {
     } else {
       alert(data.message);
     }
+  };
+
+  const joinChannel = async (e) => {
+    e.preventDefault();
+    if (!channelName) return alert("Please enter a channel name.");
+  };
+
+  const quitChannel = async (e) => {
+    e.preventDefault();
+    if (!channelName) return alert("Please enter a channel name.");
+    if (!channelList.includes(channelName)) return alert("Channel does not exist."); 
+    // <- Added check
+  };
+  
+  const createPrivateChannel = async (e) => {
+    e.preventDefault();
+    if (!channelName) return alert("Please enter a channel name.");
   };
 
   const assignUsers = async (e) => {
@@ -286,24 +307,43 @@ function Messages() {
           </button>
         </div>
         <div>
-        <h1 className = "text-l font-semibold py-2 px-4 font-size-30">Welcome {loggedInUser}</h1>
+        <h1 className = "text-l font-semibold py-2 px-4 font-size-30 ">Welcome {loggedInUser}</h1>
         </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4 flex flex-col h-full">
-            <h2 className="text-xl font-semibold mb-4">Channels</h2>
-            
-            {isAdmin === "true" && (
+            <div className="flex gap-5 -mt-3 items-start">
+              <button onClick={() => {setShowMessageList(false) ; setShowChannelList(true);}}className="scale-125 bg-black-400 hover:bg-grey-100 text-white font-semibold py-4 px-4 rounded-lg transition duration-200 transform hover:scale-140">Channels</button>
+              <button onClick={() => {setShowChannelList(false) ; setShowMessageList(true);}}className="scale-125 bg-black-400 hover:bg-grey-100 text-white font-semibold py-4 px-4 rounded-lg transition duration-200 transform hover:scale-140">Private</button>
+            </div>
+            {(isAdmin === "true"  && showChannelList ) && (
               <div className="flex justify-between mb-4">
                 <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
                 <button onClick={() => setShowDeleteModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
-            <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
+            <hr className="border-t-4 border-white-600 mb-2"></hr> 
+            {showChannelList && (<>
+            <h7 className="flex justify-between text-xl font-semibold mb-4">Public Channels </h7>
             
-
-            <h4 className="text-xl font-semibold mb-2">Private</h4> 
-            <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>
-
+            
+            <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
+            <hr className="border-t-4 border-white-600 mb-2"></hr> 
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">Your Channels</h2>
+                <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
+              </div>
+              <button onClick={() => setShowQuitModal(true)} className="flex justify-between ">Quit</button>
+              
+            </div>
+            <hr className="border-t-4 border-white-600 mb-2"></hr>
+            <div className="flex justify-between items-center mb-4">
+            <h8 className="flex justify-between text-xl font-semibold mb-4">Discover</h8>
+            <button onClick={() => setShowJoinModal(true)} className="flex justify-between  mb-4">Join 
+            </button>
+            </div>
+            </>) }
+            {showMessageList && <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>}
 
           
          
@@ -345,11 +385,24 @@ function Messages() {
       {showCreateModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl mb-4">Enter Channel Name</h2>
+            <h2 className="text-xl mb-4">Enter New Channel Name</h2>
             <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
               <button onClick={createChannel} className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
               <button onClick={() => setShowCreateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showJoinModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter Channel to Join</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={() => setShowJoinModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
@@ -363,6 +416,34 @@ function Messages() {
             <div className="mt-4 flex justify-between">
               <button onClick={deleteChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
               <button onClick={() => setShowDeleteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showQuitModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter Channel to Quit</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={quitChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Quit</button>
+              <button onClick={() => setShowQuitModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    {showCreatePrivateModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-2">Enter New Channel Name</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <h3 className="text-xl mt-5 mb-2">Invite User</h3>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={() => setShowCreatePrivateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
