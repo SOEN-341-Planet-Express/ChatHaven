@@ -11,6 +11,10 @@ function Messages() {
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
   const [privateMessageList, setPrivateMessageList] = useState([]);
+  const [sentRequestList, setSentRequestList] = useState([]);
+  const [receivedRequestList, setReceivedRequestList] = useState([]);
+  const [sentInviteList, setSentInviteList] = useState([]);
+  const [receivedInviteList, setReceivedInviteList] = useState([]);
   const [messageList, setMessageList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -27,7 +31,7 @@ function Messages() {
   const messagesEndRef = useRef(null); 
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({block: "end"});
   };
 
   useEffect(() => {
@@ -54,6 +58,7 @@ function Messages() {
       }
     }
 
+    //Load channels
     async function getChannels() {
       const response = await fetch("http://localhost:5001/getChannels", {
         method: "POST",
@@ -69,6 +74,7 @@ function Messages() {
       }
     }
 
+    //Load DM messages
     async function getDms() {
       const response = await fetch("http://localhost:5001/getPrivateMessage", {
         method: "POST",
@@ -84,11 +90,78 @@ function Messages() {
       }
     }
 
+    //Load requests sent to channel creator
+    async function getSentRequests() {
+      const response = await fetch("http://localhost:5001/getSentRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSentRequestList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load pending requests to your channels
+    async function getReceivedRequests() {
+      const response = await fetch("http://localhost:5001/getReceivedRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setReceivedRequestList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load invites sent to users
+    async function getSentInvites() {
+      const response = await fetch("http://localhost:5001/getSentInvites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSentInviteList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load invites received from channel creators
+    async function getReceivedInvites() {
+      const response = await fetch("http://localhost:5001/getReceivedInvites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setReceivedInviteList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
 
     if(currentChannel || currentChannelType){
       loadMessages()
     }
 
+    getReceivedInvites();
+    getSentInvites();
+    getReceivedRequests();
+    getSentRequests();
     getDms();
     checkAdmin();
     getChannels();
@@ -149,7 +222,7 @@ function Messages() {
     const response = await fetch("http://localhost:5001/createChannel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelName }),
+      body: JSON.stringify({ channelName, loggedInUser }),
     });
     
     const data = await response.json();
@@ -334,17 +407,14 @@ function Messages() {
   
   function listOutChannels(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        <button 
-          onClick={(e) => {
+      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200"
+        onClick={(e) => {
 
-            setCurrentChannel(item);
-            setCurrentChannelType('groupchat');
+        setCurrentChannel(item);
+        setCurrentChannelType('groupchat');
 
-          }} 
-          className="w-full text-left p-2">
+        }}>
           {item}
-        </button>
       </li>
     ));
   }
@@ -360,6 +430,38 @@ function Messages() {
         >
           {item}
         </button>
+      </li>
+    ));
+  }
+
+  function listOutSentRequests(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          You have asked user {item.owner} to join channel {item.channel}  
+      </li>
+    ));
+  }
+
+  function listOutReceivedRequests(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          User {item.invitee} has asked to join channel {item.channel}  
+      </li>
+    ));
+  }
+
+  function listOutSentInvites(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          You have asked {item.invitee} to join channel {item.channel}  
+      </li>
+    ));
+  }
+
+  function listOutReceivedInvites(items) {
+    return items.map((item, index) => (
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
+          User {item.owner} has invited you to join channel {item.channel}  
       </li>
     ));
   }
@@ -425,10 +527,70 @@ function Messages() {
     }
   };
 
-    const onEmojiClick = (emojiData) => {
-    setMessageToSend((prev) => prev + emojiData.emoji);
+
+  //Processing invite accept/deny
+  const CHANGEME = 'placeholdervalue';
+  const processInvite = async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch("http://localhost:5001/processInvite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ CHANGEME }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      toast.success(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
+    } else {
+      alert(data.message);
+    }
   };
 
+  //Sending invite
+  const CHANGEME2 = 'placeholdervalue';
+  const sendInvite = async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch("http://localhost:5001/sendInvite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ CHANGEME2 }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      toast.success(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
+    } else {
+      alert(data.message);
+    }
+  };
+
+    const onEmojiClick = (emojiData) => {
+    setMessageToSend((prev) => prev + emojiData.emoji);
+
+  };
+    
 //This code handles changing the color of the currently selected chanel
 const defaultColor = 'bg-gray-600'; 
 const activeColor = 'bg-gray-500'; 
@@ -436,12 +598,12 @@ const buttons = document.querySelectorAll('.btn');
 
 buttons.forEach((btn) => {
   btn.addEventListener('click', () => {
-    
+    // Rest all button colors
     buttons.forEach((b) => {
       b.classList.add(defaultColor);
       b.classList.remove(activeColor);
     });
-    
+    // Add active color on the clicked button, remove default color
     btn.classList.remove(defaultColor);
     btn.classList.add(activeColor);
   });
@@ -465,6 +627,9 @@ buttons.forEach((btn) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
+            <button onClick={sendInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
+            <button onClick={processInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">process invite button</button>
+            
           </div>
           <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
             className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
@@ -480,8 +645,8 @@ buttons.forEach((btn) => {
             
             {isAdmin === "true" && (
               <div className="flex justify-between mb-4">
-                <button onClick={() => setShowCreateModal(true)}  className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
-                <button onClick={() => setShowDeleteModal(true)}  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
+                <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
+                <button onClick={() => setShowDeleteModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
             <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
@@ -489,10 +654,7 @@ buttons.forEach((btn) => {
 
             <h4 className="text-xl font-semibold mb-2">Private</h4> 
             <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>
-
-
           
-         
           </div>
 
           <div className="w-3/4 p-4">
@@ -559,17 +721,28 @@ buttons.forEach((btn) => {
           </div>
 
           </div>
+          <div>
+          Sent requests
+          <ul className="space-y-2 mb-4">{listOutSentRequests(sentRequestList)}</ul>
+          Received requests
+          <ul className="space-y-2 mb-4">{listOutReceivedRequests(receivedRequestList)}</ul>
+          Sent invites
+          <ul className="space-y-2 mb-4">{listOutSentInvites(sentInviteList)}</ul>
+          Received invites
+          <ul className="space-y-2 mb-4">{listOutReceivedInvites(receivedInviteList)}</ul>
+          </div>
         </div>
         
       </div>
+      
 
       {showCreateModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-4">Enter Channel Name</h2>
-            <input type="text" data-testid="Channel-Name-Input" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input data-testid="Channel-Name-Input" type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={createChannel} data-testid="Channel-Name-Submit" className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
+              <button data-testid="Channel-Name-Submit" onClick={createChannel} className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
               <button onClick={() => setShowCreateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
@@ -580,9 +753,9 @@ buttons.forEach((btn) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-4">Enter Channel to Delete</h2>
-            <input type="text" data-testid = "Delete-Channel-Input" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input data-testid="Delete-Channel-Input" type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={deleteChannel} data-testid="Delete-Channel-Submit" className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
+              <button data-testid="Delete-Channel-Submit" onClick={deleteChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
               <button onClick={() => setShowDeleteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
