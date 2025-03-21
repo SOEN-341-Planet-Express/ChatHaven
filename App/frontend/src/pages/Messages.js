@@ -872,11 +872,11 @@ buttons.forEach((btn) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-2">Enter New Channel Name</h2>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input data-testid="Channel-Name-Input" type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="Name of New Channel"className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <h3 className="text-xl mt-5 mb-2">Invite User</h3>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="User to invite" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={(e)=>{ e.preventDefault(); createChannel(e); sendInvite(e); setShowCreatePrivateModal(false);}}className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
               <button onClick={() => setShowCreatePrivateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
