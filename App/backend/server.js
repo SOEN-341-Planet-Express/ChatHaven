@@ -231,7 +231,7 @@ app.post("/getChannels", (req, res) => {
       role = result[0].role;
       if(role ==="admin"){
         for(let i = 0; i < results.length; i++){
-            list[i] = results[i].channel_name
+            list[i] = results[i]
           }
           res.status(201).json({ message:list });
         } else {
@@ -239,7 +239,7 @@ app.post("/getChannels", (req, res) => {
           
           db.query(checkUserChannelSQL, [user], (err, result1) => {
             for(let i = 0; i < result1.length; i++){
-              list[i] = result1[i].channel_name
+              list[i] = result1[i]
             }
             res.status(201).json({ message:list });
           });
@@ -265,20 +265,6 @@ app.post("/getPrivateMessage", (req, res) => {
   });
 });
 
-
-//Load messages
-
-app.post("/loadMessages", (req, res) => {
-  const { currentChannel } = req.body;
-
-  const mysql = "SELECT * FROM messages WHERE destination=?";
-  db.query(mysql, [currentChannel], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-    
-
-    res.status(200).json({ message: results})
-  });
-});
 
 //Get the requests to join that you sent which are still pending
 app.post("/getSentRequests", (req, res) => {
@@ -439,15 +425,22 @@ app.post("/processInvite", (req, res) => {
 
 //Send invite
 app.post("/sendInvite", (req, res) => {
-  //const { username, password } = req.body;
-  const invitee = 'aaa'
-  const owner = 'thekillerturkey'
-  const channel = 'test'
-  //const type = 'invite'
-  const type = 'request'
+  const { invitedUser, loggedInUser, currentChannel } = req.body;
 
-  const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, ?)";
-  db.query(mysql, [invitee, owner, channel, type], (err, results) => {
+  const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'invite')";
+  db.query(mysql, [invitedUser, loggedInUser, currentChannel, type], (err, results) => {
+    res.status(200).json({ message: "Invite Sent"})
+  });
+  
+});
+
+//Send request
+app.post("/sendRequest", (req, res) => {
+  const { owner, loggedInUser, channelName } = req.body;
+  const type = 'invite'
+
+  const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'request')";
+  db.query(mysql, [loggedInUser, owner, channelName, type], (err, results) => {
     res.status(200).json({ message: "Invite Sent"})
   });
   

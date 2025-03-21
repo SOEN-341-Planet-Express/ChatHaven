@@ -15,6 +15,8 @@ function Messages() {
 
  
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showCreatePrivateModal, setShowCreatePrivateModal] = useState(false);
   const [showMessageList, setShowMessageList] = useState(false);
@@ -32,6 +34,8 @@ function Messages() {
   const [showDeleteUser, setShowDeleteUser] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [channelName, setChannelName] = useState("");
+  const [invitedUser, setInvitedUser] = useState("");
+
   const [username, setUsername] = useState("")
   const [currentChannelType, setCurrentChannelType] = useState("")
   const [messageToSend, setMessageToSend] = useState("")
@@ -396,7 +400,7 @@ function Messages() {
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentChannel }),
+      body: JSON.stringify({ currentChannel, currentChannelType }),
     })
     
     const data = await response.json()
@@ -448,27 +452,23 @@ function Messages() {
       <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200"
         onClick={(e) => {
 
-        setCurrentChannel(item);
+        setCurrentChannel(item.channel_name);
         setCurrentChannelType('groupchat');
 
         }}>
-          {item}
+          {item.channel_name}
       </li>
     ));
   }
 
   function listOutDMs(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
-        <button 
-          onClick={(e) => {
-            setCurrentChannel(item);setCurrentChannelType('dm');
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200" 
+      onClick={(e) => {
+        setCurrentChannel(item);setCurrentChannelType('dm');
 
-          }} 
-          className="w-full text-left p-2"
-        >
+      }}>
           {item}
-        </button>
       </li>
     ));
   }
@@ -599,18 +599,18 @@ function Messages() {
   };
 
   //Sending invite
-  const CHANGEME2 = 'placeholdervalue';
   const sendInvite = async (e) => {
     e.preventDefault();
     
     const response = await fetch("http://localhost:5001/sendInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ CHANGEME2 }),
+      body: JSON.stringify({ invitedUser, loggedInUser, currentChannel }),
     });
     
     const data = await response.json();
     if (response.ok) {
+      setShowInviteModal(false)
       toast.success(data.message, {
         position: "top-center",
         autoClose: 2000,
@@ -626,6 +626,43 @@ function Messages() {
       alert(data.message);
     }
   };
+
+  //Sending request
+  const sendRequest = async (e) => {
+    e.preventDefault();
+    const owner = getChannelOwner(channelName)
+    const response = await fetch("http://localhost:5001/sendRequest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ owner, loggedInUser, channelName }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      setShowJoinModal(false)
+      toast.success(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
+    } else {
+      alert(data.message);
+    }
+  };
+
+  function getChannelOwner(queryName){
+    for(var i = 0; i < channelList.length; i++){
+      if(queryName==channelList[i].channel_name){
+        return channelList[i].creator;
+      }
+    }
+  }
 
     const onEmojiClick = (emojiData) => {
     setMessageToSend((prev) => prev + emojiData.emoji);
@@ -669,7 +706,7 @@ buttons.forEach((btn) => {
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
 
-            <button onClick={sendInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
+            
             <button onClick={processInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">process invite button</button>
 
           </div>
@@ -716,7 +753,7 @@ buttons.forEach((btn) => {
             </button>
             </div>
             </>) }
-            {showMessageList && <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>}
+            {showMessageList && <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>}
 
         
           </div>
@@ -728,7 +765,7 @@ buttons.forEach((btn) => {
           {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
 
           {isAdmin=="true" &&
-
+          
           <button onClick={() =>setShowAssignUser(true)} className = "bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
             >Assign New Users
             </button>}
@@ -755,6 +792,8 @@ buttons.forEach((btn) => {
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
+          
+          <button onClick={() => setShowInviteModal(true)} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
           </h2>
 
           <div className="space-y-4">
@@ -827,8 +866,21 @@ buttons.forEach((btn) => {
             <h2 className="text-xl mb-4">Enter Channel to Join</h2>
             <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={sendRequest} className="bg-green-600 px-4 py-2 rounded-lg">Request to join</button>
               <button onClick={() => setShowJoinModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInviteModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter User to Invite</h2>
+            <input type="text" value={invitedUser} onChange={(e) => setInvitedUser(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={sendInvite} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={() => setShowInviteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
