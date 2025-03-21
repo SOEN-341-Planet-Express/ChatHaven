@@ -90,8 +90,8 @@ app.post("/register", (req, res) => {
     const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES ('general', ?)";
     db.query(addPermissionSQL, [username], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
-      res.status(201).json({ message: "Account Created" });
     });
+    res.status(201).json({ message: "Account Created" });
   });
 });
 
