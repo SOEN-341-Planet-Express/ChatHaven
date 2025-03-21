@@ -278,6 +278,7 @@ app.post("/loadMessages", (req, res) => {
 
     res.status(200).json({ message: results})
   });
+});
 
 //Get the requests to join that you sent which are still pending
 app.post("/getSentRequests", (req, res) => {

@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import io from "socket.io-client";
@@ -409,23 +408,7 @@ function Messages() {
     }
   }
 
-  const sendMessage = async (e) => {
-    
-    e.preventDefault()
-    const response = await fetch("http://localhost:5001/sendMessage", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messageToSend, loggedInUser, currentChannel, currentChannelType }),
-      })
-    
-    const data = await response.json()
-
-    if (response.ok) {
-      setMessageList(data.message)
-    } else {
-      alert(data.message)
-    }
-  }
+  
   
   const deleteUser = async (e) => {
     e.preventDefault()
