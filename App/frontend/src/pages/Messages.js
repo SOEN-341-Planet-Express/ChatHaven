@@ -23,6 +23,7 @@ function Messages() {
   const [currentChannel, setCurrentChannel] = useState("")
   const [socket, setSocket] = useState(null);
   const messagesEndRef = useRef(null); 
+  const [userStatus, setUserStatus] = useState("offline");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,18 +33,17 @@ function Messages() {
     scrollToBottom();
   }, [messageList]);
 
-
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
     setLoggedInUser(user);
-
+  
     async function checkAdmin() {
       const response = await fetch("http://localhost:5001/checkAdmin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user }),
       });
-
+  
       const data = await response.json();
       if (response.ok) {
         setIsAdmin(data.message);
@@ -51,14 +51,14 @@ function Messages() {
         alert(data.message);
       }
     }
-
+  
     async function getChannels() {
       const response = await fetch("http://localhost:5001/getChannels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user }),
       });
-
+  
       const data = await response.json();
       if (response.ok) {
         setChannelList(data.message);
@@ -66,38 +66,45 @@ function Messages() {
         alert(data.message);
       }
     }
-
+  
     async function getDms() {
       const response = await fetch("http://localhost:5001/getPrivateMessage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user }),
+        body: JSON.stringify({ user: loggedInUser }), // Ensure `loggedInUser` is passed correctly
       });
-
+    
       const data = await response.json();
       if (response.ok) {
-        setPrivateMessageList(data.message);
+        // The `data.message` already contains the status and last_seen for each user
+        setPrivateMessageList(data.message); // Directly set the private message list
       } else {
-        alert(data.message);
+        alert(data.message); // Handle errors
       }
     }
-
-
+  
     if(currentChannel || currentChannelType){
       loadMessages()
     }
-
+  
     getDms();
     checkAdmin();
     getChannels();
-  }, [navigate, currentChannel, currentChannelType]);
+  }, [navigate, currentChannel, currentChannelType, loggedInUser]);
 
   // Initialize the socket connection
   useEffect(() => {
     const newSocket = io("http://localhost:5001");
     setSocket(newSocket);
+
+    // Emit userConnected event when the socket connects
+    const userId = getCurrentUserId();
+    if (userId) {
+        newSocket.emit("userConnected", userId);
+    }
+
     return () => newSocket.close();
-  }, []);
+}, []);
   
   // Listen for incoming messages via WebSocket
   useEffect(() => {
@@ -129,9 +136,86 @@ function Messages() {
     });
     return () => socket.off("deleteMessage");
   }, [socket]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("disconnect", () => {
+        const userId = getCurrentUserId();
+        if (userId) {
+            logout(userId); // Set status to 'offline' and update last_seen
+        }
+    });
+
+    return () => socket.off("disconnect");
+}, [socket]);
   
-  
-  
+  // when user logs out
+  async function logout(userId) {
+    try {
+        const response = await fetch('/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }), // Send the user's ID in the request body
+        });
+
+        const data = await response.json();
+        console.log(data.message); // "Logout successful"
+
+        // Clear the user's session and redirect to the login page
+        localStorage.removeItem("loggedInUser");
+        navigate("/home");
+    } catch (error) {
+        console.error("Error during logout:", error);
+    }
+}
+
+
+useEffect(() => {
+  const interval = setInterval(async () => {
+      const userId = getCurrentUserId(); // Get the current user's ID
+      await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+      });
+  }, 60000);
+
+  return () => clearInterval(interval); // Cleanup interval on unmount
+}, []);
+
+useEffect(() => {
+  const fetchUserStatus = async () => {
+      const userId = getCurrentUserId();
+      if (userId) {
+          const response = await fetch(`/api/userStatus?userId=${userId}`);
+          const data = await response.json();
+          setUserStatus(data.status);
+      }
+  };
+
+  fetchUserStatus();
+
+  // Add a WebSocket listener for real-time status updates
+  if (socket) {
+      socket.on("userStatusChanged", (data) => {
+          if (data.userId === getCurrentUserId()) {
+              setUserStatus(data.status);
+          }
+      });
+  }
+
+  return () => {
+      if (socket) {
+          socket.off("userStatusChanged");
+      }
+  };
+}, [socket]); 
+
+function getCurrentUserId() {
+  return localStorage.getItem("loggedInUser"); // Assuming the user's ID is stored in localStorage
+}
+
   const createChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return toast.info('Please enter a channel name', {
@@ -312,18 +396,42 @@ function Messages() {
     setMessageToSend("");
   };
   
-  function listOutChannels(items) {
+  function listOutDMs(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
-        setCurrentChannel(item);
-        setCurrentChannelType('groupchat');
-      }}>
-          {item}
+      <li
+        key={index}
+        className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200"
+        onClick={(e) => {
+          setCurrentChannel(item.username);
+          setCurrentChannelType("dm");
+        }}
+      >
+        <div className="flex justify-between items-center">
+          <span>{item.username}</span>
+          <div className="flex items-center">
+            <span
+              className={`text-sm ${
+                item.status === "online"
+                  ? "text-green-400"
+                  : item.status === "away"
+                  ? "text-yellow-400"
+                  : "text-red-400"
+              }`}
+            >
+              {item.status}
+            </span>
+            {item.status === "offline" && (
+              <span className="text-sm text-gray-400 ml-2">
+                Last seen: {new Date(item.last_seen).toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
       </li>
     ));
   }
 
-  function listOutDMs(items) {
+  /*function listOutDMs(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200" onClick={(e) => {
         setCurrentChannel(item);setCurrentChannelType('dm');
@@ -331,7 +439,23 @@ function Messages() {
           {item}  
       </li>
     ));
-  }
+  } */
+
+    function listOutChannels(items) {
+      return items.map((item, index) => (
+        <li
+          key={index}
+          className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200"
+          onClick={(e) => {
+            setCurrentChannel(item);
+            setCurrentChannelType("groupchat");
+          }}
+        >
+          {item}
+        </li>
+      ));
+    }
+    
 
   const deleteMessage = async (messageId) => {
     const response = await fetch("http://localhost:5001/deleteMessage", {
@@ -419,9 +543,10 @@ function Messages() {
             Logout
           </button>
         </div>
+     
         <div>
         <h1 className = "text-l font-semibold py-2 px-4 font-size-30">Welcome {loggedInUser}</h1>
-        </div>
+      </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4 flex flex-col h-full">
             <h2 className="text-xl font-semibold mb-4">Channels</h2>

@@ -26,6 +26,7 @@ const db = mysql.createConnection({
   database: "chathaven_DB_NEW",
   port: 3306,
   ssl: { rejectUnauthorized: true },
+  timezone: '+00:00',
 });
 
 db.connect(err => {
@@ -35,12 +36,16 @@ db.connect(err => {
 
 // WebSocket Connection Handling
 io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+
+  socket.on("userConnected", (username) => {
+    socket.username = username; // Store the username in the socket object
+    onUserLogin(username); // Set status to 'online' and update last_seen
+  });
 
   // Listen for incoming messages from the client
   socket.on("sendMessage", (data) => {
     const { messageToSend, loggedInUser, currentChannel, currentChannelType } = data;
-    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
+    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type) VALUES (?, ?, ?, UTC_TIMESTAMP(), ?)";
     
     db.query(sql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
       if (err) {
@@ -49,7 +54,7 @@ io.on("connection", (socket) => {
       }
       // Broadcast the new message to all connected clients
       io.emit("receiveMessage", {
-        my_row_id: results.insertId,       // Standardized property
+        my_row_id: results.insertId, // Standardized property
         message: messageToSend,
         sender: loggedInUser,
         destination: currentChannel,
@@ -59,11 +64,39 @@ io.on("connection", (socket) => {
     });
   });
 
+  // When a user disconnects, set their status to 'offline'
   socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+    const username = socket.username; // Get the username from the socket object
+    if (username) {
+      onUserLogout(username); // Set status to 'offline' and update last_seen
+    }
+    //console.log(`User disconnected: ${socket.id}`);
   });
 });
 
+function onUserLogin(username) {
+  db.query(
+    "UPDATE users SET status = 'online', last_seen = NOW() WHERE username = ?",
+    [username],
+    (err) => {
+      if (err) {
+        console.error("Error updating user status:", err);
+      } else {
+       // console.log(`User ${username} is now online.`);
+      }
+    }
+  );
+}
+function onUserLogout(username) {
+  const sql = "UPDATE users SET status = 'offline', last_seen = UTC_TIMESTAMP() WHERE username = ?";
+  db.query(sql, [username], (err) => {
+    if (err) {
+      console.error("Error updating user status during logout:", err);
+    } else {
+      //console.log(`User ${username} is now offline.`);
+    }
+  });
+}
 // --------------------- REST Endpoints --------------------- //
 
 //New User
@@ -102,6 +135,20 @@ app.post("/login", (req, res) => {
 
     res.status(401).json({ message: "Invalid username or password" });
   });
+});
+// Logout route
+app.post("/logout", (req, res) => {
+  const { username } = req.body; // Assuming you send the user's ID in the request
+
+  if (!username) {
+      return res.status(400).json({ error: "User ID is required" });
+  }
+
+  // Update user status to 'offline' and last seen timestamp
+  updateUserStatus(username, 'offline');
+  updateLastSeen(username);
+
+  res.status(200).json({ message: "Logout successful" });
 });
 
 
@@ -229,19 +276,19 @@ app.post("/getChannels", (req, res) => {
 
 //Get list of Users to display in Private message 
 app.post("/getPrivateMessage", (req, res) => {
-  const { user } = req.body; 
-  
-  const getUsersSQL = "SELECT username FROM users WHERE username != ?";
+  const { user } = req.body;
+
+  // Fetch all users except the logged-in user, along with their status and last_seen
+  const getUsersSQL = "SELECT username, status, last_seen FROM users WHERE username != ?";
   
   db.query(getUsersSQL, [user], (err, results) => {
     if (err) return res.status(500).json({ error: "DB error" });
 
-    // Extract usernames into a list
-    const userList = results.map(row => row.username);
-
-    res.status(200).json({ message: userList });
+    // Return the list of users with their status and last_seen timestamp
+    res.status(200).json({ message: results });
   });
 });
+
 
 //Load messages
 
@@ -282,7 +329,7 @@ app.post("/deleteMessage", (req, res) => {
 app.post("/sendMessage", (req, res) => {
   const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
 
-  const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
+  const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, UTC_TIMESTAMP(), ?);";
   db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
     
@@ -316,6 +363,114 @@ app.post("/forgotpassword", (req, res) => {
   });
 });
 
+// Function to get the user's ID from the socket object
+function getUserIdFromSocket(socket) {
+  return socket.id; // Retrieve the user's ID stored in the socket object
+}
+
+// Helper function to update user status
+function updateUserStatus(username, status, callback) {
+  db.query(
+    'UPDATE users SET status = ? WHERE username = ?',
+    [status, username],
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return callback(err);
+      }
+      //console.log(`User ${username} status updated to ${status}`);
+      callback(null);
+    }
+  );
+}
+
+// Helper function to update last seen timestamp
+function updateLastSeen(username, callback) {
+  db.query(
+    'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE username = ?',
+    [username],
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return callback(err);
+      }
+      callback(null);
+    }
+  );
+}
+
+
+// Update last seen timestamp
+app.post('/api/heartbeat', (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
+  // Update last_seen first
+  updateLastSeen(username, (err) => {
+    if (err) {
+      console.error("Error updating last_seen:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    // Then update status to "online"
+    updateUserStatus(username, 'online', (err) => {
+      if (err) {
+        console.error("Error updating user status:", err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+
+      res.sendStatus(200);
+    });
+  });
+});
+
+// to check for inactivity
+function checkInactiveUsers() {
+  const inactiveThreshold = 5 * 60 * 1000; // 5 minutes in milliseconds
+  const buffer = 10 * 1000; // 10 seconds buffer to avoid race conditions
+
+  db.query(
+    'SELECT username FROM users WHERE last_seen < ? AND status = "online"',
+    [new Date(Date.now() - inactiveThreshold + buffer)], // Add buffer to the threshold
+    (err, results) => {
+      if (err) throw err;
+
+      results.forEach(user => {
+        onUserInactive(user.username); // Mark the user as "away"
+      });
+    }
+  );
+}
+
+setInterval(checkInactiveUsers, 60000);
+
+// updates user status
+function onUserInactive(username) {
+  db.query(
+    'SELECT status FROM users WHERE username = ?',
+    [username],
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return;
+      }
+
+      // Only mark as "away" if the user is currently "online"
+      if (results.length > 0 && results[0].status === 'online') {
+        updateUserStatus(username, 'away', (err) => {
+          if (err) {
+            console.error("Error updating user status:", err);
+          } else {
+            console.log(`User ${username} is now away due to inactivity.`);
+          }
+        });
+      }
+    }
+  );
+}
 module.exports = app;
 
 if (process.env.NODE_ENV !== 'test') {
