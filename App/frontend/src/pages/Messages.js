@@ -586,12 +586,14 @@ function Messages() {
         });        
     } else {
       alert(data.message);
+    }
+  };
 
     const onEmojiClick = (emojiData) => {
     setMessageToSend((prev) => prev + emojiData.emoji);
 
   };
-
+    
 //This code handles changing the color of the currently selected chanel
 const defaultColor = 'bg-gray-600'; 
 const activeColor = 'bg-gray-500'; 
