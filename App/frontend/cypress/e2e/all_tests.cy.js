@@ -146,7 +146,7 @@ describe('Message and Channel System Functionality Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
-    cy.get('button').contains('TEST3').click()
+    cy.get('li').contains('TEST3').click()
 
     cy.get('input[placeholder = "Type a message..."]').type('Test Message')
     cy.get('#messageField').click();
@@ -175,10 +175,10 @@ describe('Message and Channel System Functionality Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
-    cy.get('button').contains('TEST3').click()
+    cy.get('li').contains('TEST3').click()
     cy.contains('p', 'Test Message').should('exist')
 
-    cy.get('button').contains('general').click()
+    cy.get('li').contains('general').click()
     cy.contains('p', 'Test Message').should('not.exist')
     cy.contains('p', 'ad').should('exist')
 
