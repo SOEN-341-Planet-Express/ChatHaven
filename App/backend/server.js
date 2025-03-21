@@ -39,10 +39,16 @@ io.on("connection", (socket) => {
 
   // Listen for incoming messages from the client
   socket.on("sendMessage", (data) => {
-    const { messageToSend, loggedInUser, currentChannel, currentChannelType } = data;
-    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
+    const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = data;
+    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
     
-    db.query(sql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+    db.query(sql, [
+      messageToSend,
+      loggedInUser,
+      currentChannel,
+      currentChannelType,
+      quotedMessageId || null
+    ], (err, results) => {
       if (err) {
         console.error("Database error:", err);
         return;
@@ -54,6 +60,7 @@ io.on("connection", (socket) => {
         sender: loggedInUser,
         destination: currentChannel,
         messageType: currentChannelType,
+        quoted_message_id: quotedMessageId || null,
         timestamp: new Date().toISOString(),
       });
     });
@@ -280,10 +287,10 @@ app.post("/deleteMessage", (req, res) => {
 
 
 app.post("/sendMessage", (req, res) => {
-  const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
+  const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = req.body;
 
-  const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
-  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+  const mysql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
+  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId || null], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
     
     // Broadcast the new message to all connected clients via Socket.io
@@ -293,6 +300,7 @@ app.post("/sendMessage", (req, res) => {
       sender: loggedInUser,
       destination: currentChannel,
       messageType: currentChannelType,
+      quoted_message_id: quotedMessageId || null,
       timestamp: new Date().toISOString(),
     });
     
