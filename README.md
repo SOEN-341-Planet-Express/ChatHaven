@@ -104,6 +104,9 @@ http://localhost:3000/home
 - Development member(s): Paria Jafarian, Yénita Aman, Elliot Vinet
   
 ## Roles for Sprint 3
-To be defined.
+- Scrum Master: Elliot Vinet
+- Secretary: Paria Jafarian
+- Product Owner(s): Yénita Aman
+- Development member(s): Zachary Cohen, Ulysse Allard, Alexandre Raymond
 ## Roles for Sprint 4
 To be defined.
