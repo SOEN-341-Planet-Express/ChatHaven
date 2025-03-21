@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+
 import { toast, Flip } from 'react-toastify';
 
 
@@ -13,6 +14,7 @@ function Signup() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
+
       toast.error('Passwords do not match', {
             position: "top-center",
             autoClose: 2000,
@@ -24,6 +26,7 @@ function Signup() {
             theme: "dark",
             transition: Flip,
             });
+
       return
     }
 
@@ -36,7 +39,7 @@ function Signup() {
     const data = await response.json()
 
     if (response.ok) {
-      alert("Account Created!")
+      
       toast.success('Account Created!', {
             position: "top-center",
             autoClose: 2000,
@@ -48,6 +51,7 @@ function Signup() {
             theme: "dark",
             transition: Flip,
             })
+
       navigate("/Home")
     } else {
       alert(data.message)

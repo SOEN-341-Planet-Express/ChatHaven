@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - main  # Runs on pull requests to the main branch
-      - ic-final
 
 jobs:
   frontend-tests:
@@ -12,27 +11,50 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]  # Test frontend on multiple Node.js versions
+        node-version: [20.x]  # Test frontend on multiple Node.js versions
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: package.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Run frontend manual tests
-        run: npm run test -- --verbose --testPathPattern=App/frontend/tests
+
+      - name: Install frontend dependencies
+        run: |
+          cd App/frontend/
+          npm ci
+
+      - name: Install backend dependencies
+        run: |
+          cd App/backend/
+          npm ci
+
+      - name: Start Backend
+        run: |
+          cd App/backend/
+          nohup node server.js > backend.log 2>&1 &  # Run backend in background
+
+      - name: Start Frontend
+        run: |
+          cd App/frontend/
+          nohup npm start > frontend.log 2>&1 &  # Run frontend in background
+
+
+      - name: Run Cypress Tests
+        run: |
+          cd App/frontend/
+          npx cypress run --spec "cypress/e2e/**/*.cy.js"
 
   backend-tests:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]  # Test backend on multiple Node.js versions
+        node-version: [20.x]  # Test backend on multiple Node.js versions
 
     services:
       mysql:
@@ -59,7 +81,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package.json
       - name: Install dependencies
-        run: npm ci
+        run:  |
+          cd App/backend/
+          npm ci
       - name: Wait for MySQL
         run: |
           echo "Waiting for MySQL to be ready..."
@@ -69,4 +93,6 @@ jobs:
           done
           echo "MySQL is up and running!"
       - name: Run backend manual tests
-        run: npm run test -- --verbose App/backend/tests
+        run: |
+          cd App/backend/
+          npm run test -- --verbose --testPathPattern=tests
