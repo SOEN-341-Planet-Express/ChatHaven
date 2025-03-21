@@ -1,14 +1,17 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+
 const http = require("http"); // Required for Socket.io
 const { Server } = require("socket.io"); // Required for Socket.io
+
 
 const PORT = 5001; 
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
 
 // Create an HTTP server and initialize Socket.io
 const server = http.createServer(app);
@@ -17,6 +20,7 @@ const io = new Server(server, {
     origin: "*", // Allow all origins for development (adjust in production)
   },
 });
+
 
 // Connection
 const db = mysql.createConnection({
@@ -32,6 +36,7 @@ db.connect(err => {
   if (err) throw err;
   console.log("Connected");
 });
+
 
 // WebSocket Connection Handling
 io.on("connection", (socket) => {
@@ -65,6 +70,7 @@ io.on("connection", (socket) => {
 });
 
 // --------------------- REST Endpoints --------------------- //
+
 
 //New User
 app.post("/register", (req, res) => {
@@ -114,7 +120,9 @@ app.post("/login", (req, res) => {
 
 //Create Channel
 app.post("/createChannel", (req, res) => {
+
   const {channelName, loggedInUser}  = req.body;
+
 
   // Check if channel already exists
   const checkChannelSQL = "SELECT * FROM channel_list WHERE channel_name = ?";
@@ -127,8 +135,10 @@ app.post("/createChannel", (req, res) => {
     }  
 
     //Updates the table of channels to contain the newest channel
+
     const updateChannelListSQL = "INSERT INTO channel_list (channel_name, creator) VALUES (?, ?)";
     db.query(updateChannelListSQL, [channelName, loggedInUser], (err, result) => {
+
       if (err) return res.status(500).json({ error: "DB error" });
     });
 
@@ -145,11 +155,11 @@ app.post("/deleteChannel", (req, res) => {
     db.query(updateChannelListSQL, channelName, (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
-
     const eraseMessagesSQL = "DELETE FROM messages WHERE destination=? AND message_type='groupchat'";
     db.query(eraseMessagesSQL, channelName, (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
+
     res.status(201).json({ message: "Channel Deleted" });
 });
 
@@ -255,6 +265,21 @@ app.post("/getPrivateMessage", (req, res) => {
   });
 });
 
+
+//Load messages
+
+app.post("/loadMessages", (req, res) => {
+  const { currentChannel } = req.body;
+
+  const mysql = "SELECT * FROM messages WHERE destination=?";
+  db.query(mysql, [currentChannel], (err, results) => {
+    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+    
+
+    res.status(200).json({ message: results})
+  });
+});
+
 //Get the requests to join that you sent which are still pending
 app.post("/getSentRequests", (req, res) => {
   const { user } = req.body; 
@@ -327,28 +352,33 @@ app.post("/loadMessages", (req, res) => {
 }
 
 
+
 });
 
 // Delete a message
 app.post("/deleteMessage", (req, res) => {
   const sql = "DELETE FROM messages WHERE my_row_id = ?";
   db.query(sql, [req.body.id], (err, result) => {
+
     if (err) return res.status(500).json({ message: "Database error" });
 
     // Emit a socket event to notify all clients about the deletion
     io.emit("deleteMessage", { id: req.body.id });
+
     res.json({ message: "Message deleted" });
   });
 });
 
 
 // Send a message
+
 app.post("/sendMessage", (req, res) => {
   const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
 
   const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
   db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+
     
     // Broadcast the new message to all connected clients via Socket.io
     io.emit("receiveMessage", {
@@ -360,6 +390,7 @@ app.post("/sendMessage", (req, res) => {
       timestamp: new Date().toISOString(),
     });
     
+
     res.status(200).json({ message: "Message sent"})
   });
 });
@@ -370,7 +401,9 @@ app.post("/forgotpassword", (req, res) => {
 
   const mysql = "UPDATE users SET password = ? WHERE username = ?";
   db.query(mysql, [password, username], (err, results) => {
+
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
+
     
     if (results.affectedRows === 0) return res.status(401).json({ message: "Invalid username entry :/"});
 
@@ -379,6 +412,7 @@ app.post("/forgotpassword", (req, res) => {
     res.status(200).json({ message: "Password changed successfully!"})
   });
 });
+
 
 
 //Process invite
@@ -438,9 +472,11 @@ app.post("/deleteUser", (req, res) => {
 });
 
 
+
 module.exports = app;
 
 if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 5001;
+
   server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 }

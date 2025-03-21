@@ -5,12 +5,21 @@ import { useEffect, useState, useRef } from "react";
 import { toast, Flip } from 'react-toastify';
 import Picker from "emoji-picker-react";
 
+
 function Messages() {
   const navigate = useNavigate();
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
   const [channelList, setChannelList] = useState([]);
   const [privateMessageList, setPrivateMessageList] = useState([]);
+
+ 
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showQuitModal, setShowQuitModal] = useState(false);
+  const [showCreatePrivateModal, setShowCreatePrivateModal] = useState(false);
+  const [showMessageList, setShowMessageList] = useState(false);
+  const [showChannelList, setShowChannelList] = useState(true);
+
   const [sentRequestList, setSentRequestList] = useState([]);
   const [receivedRequestList, setReceivedRequestList] = useState([]);
   const [sentInviteList, setSentInviteList] = useState([]);
@@ -39,6 +48,7 @@ function Messages() {
   }, [messageList]);
 
 
+
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
     setLoggedInUser(user);
@@ -59,6 +69,7 @@ function Messages() {
     }
 
     //Load channels
+
     async function getChannels() {
       const response = await fetch("http://localhost:5001/getChannels", {
         method: "POST",
@@ -74,7 +85,9 @@ function Messages() {
       }
     }
 
+
     //Load DM messages
+
     async function getDms() {
       const response = await fetch("http://localhost:5001/getPrivateMessage", {
         method: "POST",
@@ -218,11 +231,13 @@ function Messages() {
       theme: "dark",
       transition: Flip,
       });
+
     
     const response = await fetch("http://localhost:5001/createChannel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channelName, loggedInUser }),
+
     });
     
     const data = await response.json();
@@ -298,6 +313,23 @@ function Messages() {
     }
   };
 
+
+  const joinChannel = async (e) => {
+    e.preventDefault();
+    if (!channelName) return alert("Please enter a channel name.");
+  };
+
+  const quitChannel = async (e) => {
+    e.preventDefault();
+    if (!channelName) return alert("Please enter a channel name.");
+    if (!channelList.includes(channelName)) return alert("Channel does not exist."); 
+    // <- Added check
+  };
+  
+  const createPrivateChannel = async (e) => {
+    e.preventDefault();
+    if (!channelName) return alert("Please enter a channel name.");
+  };
   const assignUsers = async (e) => {
     e.preventDefault()
     const response = await fetch("http://localhost:5001/assignUsers", {
@@ -309,6 +341,7 @@ function Messages() {
     const data = await response.json()
 
     if (response.ok) {
+
       toast.success('User assigned to channel!', {
         position: "top-center",
         autoClose: 2000,
@@ -320,6 +353,7 @@ function Messages() {
         theme: "dark",
         transition: Flip,
         });       
+
       setShowAssignUser(false)
     } else {
       alert(data.message)
@@ -338,6 +372,7 @@ function Messages() {
     const data = await response.json()
 
     if (response.ok) {
+
       toast.success('User removed from channel!', {
         position: "top-center",
         autoClose: 2000,
@@ -349,12 +384,32 @@ function Messages() {
         theme: "dark",
         transition: Flip,
         }); 
+
       setShowRemoveUser(false)
     } else {
       alert(data.message)
     }
   }
 
+
+  const loadMessages = async () => {
+    const response = await fetch("http://localhost:5001/loadMessages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentChannel }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+      setMessageList(data.message)
+    } else {
+      alert(data.message)
+    }
+  }
+
+  
+  
   const deleteUser = async (e) => {
     e.preventDefault()
     
@@ -373,23 +428,6 @@ function Messages() {
       alert(data.message)
     }
     loadMessages()
-  }
-
-  const loadMessages = async () => {
-
-    const response = await fetch("http://localhost:5001/loadMessages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentChannel, currentChannelType, loggedInUser }),
-    })
-    
-    const data = await response.json()
-
-    if (response.ok) {
-      setMessageList(data.message)
-    } else {
-      alert(data.message)
-    }
   }
 
   // Emit the message through the WebSocket connection
@@ -425,6 +463,7 @@ function Messages() {
         <button 
           onClick={(e) => {
             setCurrentChannel(item);setCurrentChannelType('dm');
+
           }} 
           className="w-full text-left p-2"
         >
@@ -466,6 +505,7 @@ function Messages() {
     ));
   }
 
+
   const deleteMessage = async (messageId) => {
     const response = await fetch("http://localhost:5001/deleteMessage", {
       method: "POST",
@@ -494,6 +534,7 @@ function Messages() {
       alert(data.message);
     }
   };
+
   
   function listOutMessages(items) {
     return items.map((item) => (
@@ -503,6 +544,7 @@ function Messages() {
             <strong className="text-green-400">{item.sender}: </strong>
             {item.message}
           </p>
+          {/* Show Message ID only if the user is an admin */}
           {isAdmin === "true" && (
             <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
           )}
@@ -520,7 +562,6 @@ function Messages() {
       </div>
     ));
   }
-   
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       sendMessage(e);
@@ -627,9 +668,10 @@ buttons.forEach((btn) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
+
             <button onClick={sendInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
             <button onClick={processInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">process invite button</button>
-            
+
           </div>
           <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
             className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
@@ -637,24 +679,46 @@ buttons.forEach((btn) => {
           </button>
         </div>
         <div>
-        <h1 className = "text-l font-semibold py-2 px-4 font-size-30">Welcome {loggedInUser}</h1>
+
+        <h1 className = "text-l font-semibold py-2 px-4 font-size-30 ">Welcome {loggedInUser}</h1>
         </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4 flex flex-col h-full">
-            <h2 className="text-xl font-semibold mb-4">Channels</h2>
-            
-            {isAdmin === "true" && (
+            <div className="flex gap-5 -mt-3 items-start">
+              <button onClick={() => {setShowMessageList(false) ; setShowChannelList(true);}}className="scale-125 bg-black-400 hover:bg-grey-100 text-white font-semibold py-4 px-4 rounded-lg transition duration-200 transform hover:scale-140">Channels</button>
+              <button onClick={() => {setShowChannelList(false) ; setShowMessageList(true);}}className="scale-125 bg-black-400 hover:bg-grey-100 text-white font-semibold py-4 px-4 rounded-lg transition duration-200 transform hover:scale-140">Private</button>
+            </div>
+            {(isAdmin === "true"  && showChannelList ) && (
               <div className="flex justify-between mb-4">
                 <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
                 <button onClick={() => setShowDeleteModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
-            <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
+            <hr className="border-t-4 border-white-600 mb-2"></hr> 
+            {showChannelList && (<>
+            <h7 className="flex justify-between text-xl font-semibold mb-4">Public Channels </h7>
             
+            
+            <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
+            <hr className="border-t-4 border-white-600 mb-2"></hr> 
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold">Your Channels</h2>
+                <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
+              </div>
+              <button onClick={() => setShowQuitModal(true)} className="flex justify-between ">Quit</button>
+              
+            </div>
+            <hr className="border-t-4 border-white-600 mb-2"></hr>
+            <div className="flex justify-between items-center mb-4">
+            <h8 className="flex justify-between text-xl font-semibold mb-4">Discover</h8>
+            <button onClick={() => setShowJoinModal(true)} className="flex justify-between  mb-4">Join 
+            </button>
+            </div>
+            </>) }
+            {showMessageList && <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>}
 
-            <h4 className="text-xl font-semibold mb-2">Private</h4> 
-            <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>
-          
+        
           </div>
 
           <div className="w-3/4 p-4">
@@ -662,6 +726,13 @@ buttons.forEach((btn) => {
           <h2 className="flex justify-between text-xl font-semibold mb-4">Messages
           {/* admin buttons*/}
           {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
+
+          {isAdmin=="true" &&
+
+          <button onClick={() =>setShowAssignUser(true)} className = "bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
+            >Assign New Users
+            </button>}
+
           {isAdmin == "true" && (
           <>
             <button
@@ -680,11 +751,12 @@ buttons.forEach((btn) => {
           </>
         )}
           
+
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
           </h2>
-          
+
           <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
@@ -730,11 +802,11 @@ buttons.forEach((btn) => {
           <ul className="space-y-2 mb-4">{listOutSentInvites(sentInviteList)}</ul>
           Received invites
           <ul className="space-y-2 mb-4">{listOutReceivedInvites(receivedInviteList)}</ul>
+
           </div>
         </div>
         
       </div>
-      
 
       {showCreateModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -749,6 +821,19 @@ buttons.forEach((btn) => {
         </div>
       )}
 
+      {showJoinModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter Channel to Join</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={() => setShowJoinModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDeleteModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -757,6 +842,34 @@ buttons.forEach((btn) => {
             <div className="mt-4 flex justify-between">
               <button data-testid="Delete-Channel-Submit" onClick={deleteChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Delete</button>
               <button onClick={() => setShowDeleteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showQuitModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter Channel to Quit</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={quitChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Quit</button>
+              <button onClick={() => setShowQuitModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    {showCreatePrivateModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-2">Enter New Channel Name</h2>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <h3 className="text-xl mt-5 mb-2">Invite User</h3>
+            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={() => setShowCreatePrivateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
@@ -790,6 +903,7 @@ buttons.forEach((btn) => {
         </div>
       )}
 
+
         {showDeleteUser && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                   <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
@@ -802,8 +916,11 @@ buttons.forEach((btn) => {
                   </div>
                 </div>
               )}
+
       
     </div>
   );
 }
+
 export default Messages;
+
