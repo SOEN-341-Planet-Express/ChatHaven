@@ -37,6 +37,9 @@ function Messages() {
   const [invitedUser, setInvitedUser] = useState("");
 
   const [username, setUsername] = useState("")
+  const [acceptOrDeny, setAcceptOrDeny] = useState("")
+  const [currentInvite, setCurrentInvite] = useState("")
+
   const [currentChannelType, setCurrentChannelType] = useState("")
   const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
@@ -174,6 +177,9 @@ function Messages() {
     if(currentChannel || currentChannelType){
       loadMessages()
     }
+    if(acceptOrDeny || currentInvite){
+      processInvite()
+    }
 
     getReceivedInvites();
     getSentInvites();
@@ -182,7 +188,7 @@ function Messages() {
     getDms();
     checkAdmin();
     getChannels();
-  }, [navigate, currentChannel, currentChannelType]);
+  }, [navigate, currentChannel, currentChannelType, acceptOrDeny, currentInvite]);
 
   // Initialize the socket connection
   useEffect(() => {
@@ -484,7 +490,9 @@ function Messages() {
   function listOutReceivedRequests(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
-          User {item.invitee} has asked to join channel {item.channel}  
+          User {item.invitee} has asked to join channel {item.channel} 
+          <p><button onClick={()=>{setAcceptOrDeny("accept") ; setCurrentInvite(item);}}>Accept</button>
+          <button onClick={()=>{setAcceptOrDeny("deny") ; setCurrentInvite(item);}}>Deny</button></p> 
       </li>
     ));
   }
@@ -570,19 +578,21 @@ function Messages() {
 
 
   //Processing invite accept/deny
-  const CHANGEME = 'placeholdervalue';
+  
   const processInvite = async (e) => {
-    e.preventDefault();
-    
+    //e.preventDefault();
+    const owner = currentInvite.owner;
+    const invitee = currentInvite.invitee;
+    const channel = currentInvite.channel;
     const response = await fetch("http://localhost:5001/processInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ CHANGEME }),
+      body: JSON.stringify({ acceptOrDeny, owner, invitee, channel}),
     });
     
     const data = await response.json();
     if (response.ok) {
-      toast.success(data.message, {
+      toast.success(acceptOrDeny, {
         position: "top-center",
         autoClose: 2000,
         hideProgressBar: false,

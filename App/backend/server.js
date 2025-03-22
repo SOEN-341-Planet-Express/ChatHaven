@@ -403,17 +403,14 @@ app.post("/forgotpassword", (req, res) => {
 
 //Process invite
 app.post("/processInvite", (req, res) => {
-  //const { username, password } = req.body;
-  const invitee = 'test'
-  const owner = 'aaa'
-  const channel = 'test'
-  const accepted = 'false'
+  const { acceptOrDeny, owner, invitee, channel } = req.body;
+  
 
   const mysql = "DELETE FROM channel_invites WHERE invitee = (?) AND owner = (?) and channel = (?)";
   db.query(mysql, [invitee, owner, channel], (err, results) => {
   });
 
-  if(accepted == 'true'){
+  if(acceptOrDeny == 'accept'){
     const mysql2 = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
   db.query(mysql2, [channel, invitee], (err, results) => {
     res.status(200).json({ message: "Invite Accepted"})
@@ -428,7 +425,7 @@ app.post("/sendInvite", (req, res) => {
   const { invitedUser, loggedInUser, currentChannel } = req.body;
 
   const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'invite')";
-  db.query(mysql, [invitedUser, loggedInUser, currentChannel, type], (err, results) => {
+  db.query(mysql, [invitedUser, loggedInUser, currentChannel], (err, results) => {
     res.status(200).json({ message: "Invite Sent"})
   });
   
@@ -437,10 +434,10 @@ app.post("/sendInvite", (req, res) => {
 //Send request
 app.post("/sendRequest", (req, res) => {
   const { owner, loggedInUser, channelName } = req.body;
-  const type = 'invite'
+  
 
   const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'request')";
-  db.query(mysql, [loggedInUser, owner, channelName, type], (err, results) => {
+  db.query(mysql, [loggedInUser, owner, channelName], (err, results) => {
     res.status(200).json({ message: "Invite Sent"})
   });
   
