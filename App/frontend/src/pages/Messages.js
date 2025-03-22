@@ -30,6 +30,7 @@ function Messages() {
   const [showAssignUser, setShowAssignUser] = useState(false);
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [showDeleteUser, setShowDeleteUser] = useState(false);
+  const [showButtonsAdmin, setShowButtonsAdmin] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [username, setUsername] = useState("")
@@ -785,8 +786,6 @@ buttons.forEach((btn) => {
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
 
-            <button onClick={sendInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
-            <button onClick={processInvite} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">process invite button</button>
 
           </div>
           <button
@@ -851,7 +850,6 @@ buttons.forEach((btn) => {
                 <h2 className="text-xl font-semibold">Your Channels</h2>
                 <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
               </div>
-              <button onClick={() => setShowQuitModal(true)} className="flex justify-between ">Quit</button>
               
             </div>
             <hr className="border-t-4 border-white-600 mb-2"></hr>
@@ -867,47 +865,57 @@ buttons.forEach((btn) => {
 
           <div className="w-3/4 p-4">
           
-          <h2 className="flex justify-between text-xl font-semibold mb-4">Messages
+          <h2 className="flex justify-between mb-4">
+            <h3 className = " font-semibold text-xl ">Messages</h3>
           {/* admin buttons*/}
           {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
 
-          {isAdmin==="true" &&
-
-          <button onClick={() =>setShowAssignUser(true)} className = "bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >Assign New Users
-            </button>}
-
-          {isAdmin === "true" && (
-          <>
-            <button
-              onClick={() => setShowAssignUser(true)}
-              className="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >
-              Assign New Users
-            </button>
-
-            <button
-              onClick={() => setShowDeleteUser(true)}
-              className="bg-red-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >
-              Delete a User
-            </button>
-          </>
-        )}
           
+          {(isAdmin === "true" && showButtonsAdmin) && (
+  <>
+            <button
+      onClick={() => setShowAssignUser(true)}
+      className="scale-60 text-white rounded-lg transition duration-200 ml-20 transform hover:scale-80"
+    >
+      Assign New Users
+    </button>
 
-          {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
-          {isAdmin==="true" &&
-          <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
-          </h2>
+    <button
+      onClick={() => setShowDeleteUser(true)}
+      className="text-l"
+    >
+      Delete a User
+    </button>
 
+    <button 
+      onClick={() => setShowRemoveUser(true)} 
+      className="scale-70 text-white  rounded-lg transition duration-200 transform hover:scale-115 "
+    >
+      Remove User
+    </button>
+  </>
+)}
+
+{(isAdmin === "false" && showButtonsAdmin) && (
+  <>
+  <button onClick={sendInvite} className="flex justify-between transition-500 hover:text-xl ml-40 ">Send Invite </button>
+
+  <button onClick={processInvite} className="flex justify-between transition-500 hover:text-xl " >Process Invite</button>
+
+ <button onClick={() => setShowQuitModal(true)} className="flex justify-between  transition-500 hover:text-xl"> Quit</button>
+
+ </>
+)}
+<button onClick={ () => setShowButtonsAdmin(prev=>!prev)} className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
+</h2>
+          
           <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           <div ref={messagesEndRef} /> {                      }
           </div>
           </div>
-
+          
           <div className="mt-2 flex items-center">
 
           <div className="relative">
@@ -937,7 +945,7 @@ buttons.forEach((btn) => {
           </div>
 
           </div>
-          <div>
+          <div className= "mt-5">
           Sent requests
           <ul className="space-y-2 mb-4">{listOutSentRequests(sentRequestList)}</ul>
           Received requests
@@ -1008,11 +1016,11 @@ buttons.forEach((btn) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-2">Enter New Channel Name</h2>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input data-testid="Channel-Name-Input" type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="Name of New Channel"className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <h3 className="text-xl mt-5 mb-2">Invite User</h3>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="User to invite" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={(e)=>{ e.preventDefault(); createChannel(e); sendInvite(e); setShowCreatePrivateModal(false);}}className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
               <button onClick={() => setShowCreatePrivateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
