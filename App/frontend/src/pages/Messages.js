@@ -40,6 +40,8 @@ function Messages() {
   const [socket, setSocket] = useState(null);
   const messagesEndRef = useRef(null); 
 
+  const [userStatus, setUserStatus] = useState({});
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({block: "end"});
   };
@@ -217,6 +219,104 @@ function Messages() {
       setMessageList((prevMessages) => prevMessages.filter((msg) => msg.my_row_id !== data.id));
     });
     return () => socket.off("deleteMessage");
+  }, [socket]);
+
+  useEffect(() => {
+    let awayTimer;
+  
+    const resetAwayTimer = () => {
+      // Clear the existing timer
+      clearTimeout(awayTimer);
+  
+      // Set status to "online"
+      fetch("http://localhost:5001/updateStatus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loggedInUser, status: "online" }),
+      });
+  
+      // Set a new timer for "away" status
+      awayTimer = setTimeout(() => {
+        fetch("http://localhost:5001/updateStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loggedInUser, status: "away" }),
+        });
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+  
+    // Reset the timer on user activity
+    window.addEventListener("mousemove", resetAwayTimer);
+    window.addEventListener("keydown", resetAwayTimer);
+  
+    // Initialize the timer
+    resetAwayTimer();
+  
+    // Cleanup
+    return () => {
+      clearTimeout(awayTimer);
+      window.removeEventListener("mousemove", resetAwayTimer);
+      window.removeEventListener("keydown", resetAwayTimer);
+    };
+  }, [loggedInUser]);
+  
+
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      const statusMap = {};
+      for (const user of privateMessageList) {
+        const response = await fetch("http://localhost:5001/getUserStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user }),
+        });
+        const data = await response.json();
+        statusMap[user] = data;
+      }
+      setUserStatus(statusMap);
+    };
+  
+    if (privateMessageList.length > 0) {
+      fetchUserStatus();
+    }
+  }, [privateMessageList]);
+
+
+  useEffect(() => {
+    if (socket && loggedInUser) {
+      socket.emit("setOnline", loggedInUser);
+  
+      const handleBeforeUnload = () => {
+        fetch("http://localhost:5001/updateStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loggedInUser, status: "offline" }),
+        });
+      };
+  
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [socket, loggedInUser]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    // Listen for status updates from the server
+    socket.on("userStatusUpdate", (data) => {
+      setUserStatus((prev) => ({
+        ...prev,
+        [data.username]: { status: data.status, last_seen: new Date().toISOString() },
+      }));
+    });
+  
+    // Cleanup
+    return () => {
+      socket.off("userStatusUpdate");
+    };
   }, [socket]);
   
   const createChannel = async (e) => {
@@ -463,12 +563,28 @@ function Messages() {
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
         <button 
           onClick={(e) => {
-            setCurrentChannel(item);setCurrentChannelType('dm');
-
+            setCurrentChannel(item);
+            setCurrentChannelType('dm');
           }} 
-          className="w-full text-left p-2"
+          className="w-full text-left p-2 flex justify-between items-center"
         >
-          {item}
+          <span>{item}</span> {/* Username on the left */}
+          <span 
+            className={`text-sm ${
+              userStatus[item]?.status === "online" ? "text-green-400" : 
+              userStatus[item]?.status === "away" ? "text-yellow-400" : 
+              "text-red-400"
+            }`}
+            title={
+              userStatus[item]?.status === "offline" 
+                ? `Last seen: ${new Date(userStatus[item]?.last_seen).toLocaleString()}` 
+                : ""
+            }
+          >
+            {userStatus[item]?.status === "online" ? "Online" : 
+             userStatus[item]?.status === "away" ? "Away" : 
+             "Offline"}
+          </span>
         </button>
       </li>
     ));
@@ -672,10 +788,39 @@ buttons.forEach((btn) => {
 
 
           </div>
-          <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
-            className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
-            Logout
-          </button>
+          <button
+          onClick={async () => {
+            try {
+              // Notify the server to update status to "offline"
+              const response = await fetch("http://localhost:5001/updateStatus", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: loggedInUser, status: "offline" }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to update status");
+              }
+
+              // Close the socket connection
+              if (socket) {
+                socket.disconnect();
+              }
+
+              // Remove loggedInUser from localStorage
+              localStorage.removeItem("loggedInUser");
+
+              // Navigate to the home page
+              navigate("/home");
+            } catch (err) {
+              console.error("Error updating status on logout:", err);
+              alert("Failed to update status. Please try again.");
+            }
+          }}
+          className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
+        >
+          Logout
+        </button>
         </div>
         <div>
 
@@ -714,8 +859,7 @@ buttons.forEach((btn) => {
             </button>
             </div>
             </>) }
-            {showMessageList && <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>}
-
+            {showMessageList && (<ul className="space-y-2 mb-4"> {listOutDMs(privateMessageList)} </ul>)}
         
           </div>
 

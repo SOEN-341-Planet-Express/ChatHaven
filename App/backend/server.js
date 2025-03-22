@@ -30,6 +30,7 @@ const db = mysql.createConnection({
   database: "chathaven_DB_NEW",
   port: 3306,
   ssl: { rejectUnauthorized: true },
+  timezone: '+00:00', 
 });
 
 db.connect(err => {
@@ -41,6 +42,22 @@ db.connect(err => {
 // WebSocket Connection Handling
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
+
+  // Listen for the user's initial connection and set their status to "online"
+  socket.on("setOnline", (username) => {
+    if (username) {
+      const sql = "UPDATE users SET status = 'online', last_seen = UTC_TIMESTAMP() WHERE username = ?";
+      db.query(sql, [username], (err) => {
+        if (err) {
+          console.error("Error updating status to online:", err);
+        } else {
+          
+          // Broadcast the updated status to all clients
+          io.emit("userStatusUpdate", { username, status: "online" });
+        }
+      });
+    }
+  });
 
   // Listen for incoming messages from the client
   socket.on("sendMessage", (data) => {
@@ -64,8 +81,43 @@ io.on("connection", (socket) => {
     });
   });
 
+  // Listen for user disconnection and set their status to "offline"
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
+
+    // Find the username associated with this socket (you may need to store this mapping)
+    const username = socket.username; // Assuming you store the username in the socket object
+
+    if (username) {
+      const sql = "UPDATE users SET status = 'offline', last_seen = UTC_TIMESTAMP() WHERE username = ?";
+      db.query(sql, [username], (err) => {
+        if (err) {
+          console.error("Error updating status to offline:", err);
+        } else {
+          
+          // Broadcast the updated status to all clients
+          io.emit("userStatusUpdate", { username, status: "offline" });
+        }
+      });
+    }
+  });
+
+  // Listen for manual status updates (e.g., "away")
+  socket.on("setStatus", (data) => {
+    const { username, status } = data;
+
+    if (username && status) {
+      const sql = "UPDATE users SET status = ?, last_seen = UTC_TIMESTAMP() WHERE username = ?";
+      db.query(sql, [status, username], (err) => {
+        if (err) {
+          console.error("Error updating status:", err);
+        } else {
+          
+          // Broadcast the updated status to all clients
+          io.emit("userStatusUpdate", { username, status });
+        }
+      });
+    }
   });
 });
 
@@ -471,7 +523,31 @@ app.post("/deleteUser", (req, res) => {
   });
 });
 
+// Update user status
+app.post("/updateStatus", (req, res) => {
+  const { username, status } = req.body;
 
+  const sql = "UPDATE users SET status = ?, last_seen = UTC_TIMESTAMP() WHERE username = ?";
+  db.query(sql, [status, username], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    res.status(200).json({ message: "Status updated" });
+  });
+});
+
+// Fetch user status
+app.post("/getUserStatus", (req, res) => {
+  const { username } = req.body;
+
+  const sql = "SELECT status, last_seen FROM users WHERE username = ?";
+  db.query(sql, [username], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    if (results.length > 0) {
+      res.status(200).json({ status: results[0].status, last_seen: results[0].last_seen });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  });
+});
 
 module.exports = app;
 
