@@ -32,6 +32,7 @@ function Messages() {
   const [showAssignUser, setShowAssignUser] = useState(false);
   const [showRemoveUser, setShowRemoveUser] = useState(false);
   const [showDeleteUser, setShowDeleteUser] = useState(false);
+  const [showButtonsAdmin, setShowButtonsAdmin] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [invitedUser, setInvitedUser] = useState("");
@@ -45,6 +46,8 @@ function Messages() {
   const [currentChannel, setCurrentChannel] = useState("")
   const [socket, setSocket] = useState(null);
   const messagesEndRef = useRef(null); 
+
+  const [userStatus, setUserStatus] = useState({});
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({block: "end"});
@@ -226,6 +229,104 @@ function Messages() {
       setMessageList((prevMessages) => prevMessages.filter((msg) => msg.my_row_id !== data.id));
     });
     return () => socket.off("deleteMessage");
+  }, [socket]);
+
+  useEffect(() => {
+    let awayTimer;
+  
+    const resetAwayTimer = () => {
+      // Clear the existing timer
+      clearTimeout(awayTimer);
+  
+      // Set status to "online"
+      fetch("http://localhost:5001/updateStatus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loggedInUser, status: "online" }),
+      });
+  
+      // Set a new timer for "away" status
+      awayTimer = setTimeout(() => {
+        fetch("http://localhost:5001/updateStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loggedInUser, status: "away" }),
+        });
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+  
+    // Reset the timer on user activity
+    window.addEventListener("mousemove", resetAwayTimer);
+    window.addEventListener("keydown", resetAwayTimer);
+  
+    // Initialize the timer
+    resetAwayTimer();
+  
+    // Cleanup
+    return () => {
+      clearTimeout(awayTimer);
+      window.removeEventListener("mousemove", resetAwayTimer);
+      window.removeEventListener("keydown", resetAwayTimer);
+    };
+  }, [loggedInUser]);
+  
+
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      const statusMap = {};
+      for (const user of privateMessageList) {
+        const response = await fetch("http://localhost:5001/getUserStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user }),
+        });
+        const data = await response.json();
+        statusMap[user] = data;
+      }
+      setUserStatus(statusMap);
+    };
+  
+    if (privateMessageList.length > 0) {
+      fetchUserStatus();
+    }
+  }, [privateMessageList]);
+
+
+  useEffect(() => {
+    if (socket && loggedInUser) {
+      socket.emit("setOnline", loggedInUser);
+  
+      const handleBeforeUnload = () => {
+        fetch("http://localhost:5001/updateStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loggedInUser, status: "offline" }),
+        });
+      };
+  
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [socket, loggedInUser]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    // Listen for status updates from the server
+    socket.on("userStatusUpdate", (data) => {
+      setUserStatus((prev) => ({
+        ...prev,
+        [data.username]: { status: data.status, last_seen: new Date().toISOString() },
+      }));
+    });
+  
+    // Cleanup
+    return () => {
+      socket.off("userStatusUpdate");
+    };
   }, [socket]);
   
   const createChannel = async (e) => {
@@ -447,12 +548,32 @@ function Messages() {
 
   function listOutDMs(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200" 
-      onClick={(e) => {
-        setCurrentChannel(item);setCurrentChannelType('dm');
-
-      }}>
-          {item}
+      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
+        <button 
+          onClick={(e) => {
+            setCurrentChannel(item);
+            setCurrentChannelType('dm');
+          }} 
+          className="w-full text-left p-2 flex justify-between items-center"
+        >
+          <span>{item}</span> {/* Username on the left */}
+          <span 
+            className={`text-sm ${
+              userStatus[item]?.status === "online" ? "text-green-400" : 
+              userStatus[item]?.status === "away" ? "text-yellow-400" : 
+              "text-red-400"
+            }`}
+            title={
+              userStatus[item]?.status === "offline" 
+                ? `Last seen: ${new Date(userStatus[item]?.last_seen).toLocaleString()}` 
+                : ""
+            }
+          >
+            {userStatus[item]?.status === "online" ? "Online" : 
+             userStatus[item]?.status === "away" ? "Away" : 
+             "Offline"}
+          </span>
+        </button>
       </li>
     ));
   }
@@ -723,12 +844,40 @@ buttons.forEach((btn) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
-
           </div>
-          <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
-            className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
-            Logout
-          </button>
+          <button
+          onClick={async () => {
+            try {
+              // Notify the server to update status to "offline"
+              const response = await fetch("http://localhost:5001/updateStatus", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: loggedInUser, status: "offline" }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to update status");
+              }
+
+              // Close the socket connection
+              if (socket) {
+                socket.disconnect();
+              }
+
+              // Remove loggedInUser from localStorage
+              localStorage.removeItem("loggedInUser");
+
+              // Navigate to the home page
+              navigate("/home");
+            } catch (err) {
+              console.error("Error updating status on logout:", err);
+              alert("Failed to update status. Please try again.");
+            }
+          }}
+          className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
+        >
+          Logout
+        </button>
         </div>
         <div>
 
@@ -758,7 +907,6 @@ buttons.forEach((btn) => {
                 <h2 className="text-xl font-semibold">Your Channels</h2>
                 <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
               </div>
-              <button onClick={() => setShowQuitModal(true)} className="flex justify-between ">Quit</button>
               
             </div>
             <hr className="border-t-4 border-white-600 mb-2"></hr>
@@ -775,35 +923,51 @@ buttons.forEach((btn) => {
 
           <div className="w-2/4 p-4">
           
-          <h2 className="flex justify-between text-xl font-semibold mb-4">Messages
+          <h2 className="flex justify-between mb-4">
+            <h3 className = " font-semibold text-xl ">Messages</h3>
           {/* admin buttons*/}
           {/* clicking the assign users button should bring up a list of the users not already in the channel for the admin to select*/}
 
-          {isAdmin=="true" &&
           
-          <button onClick={() =>setShowAssignUser(true)} className = "bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >Assign New Users
-            </button>}
-
-          {isAdmin == "true" && (
-          <>
-            <button
-              onClick={() => setShowAssignUser(true)}
-              className="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >
-              Assign New Users
-            </button>
+          {(isAdmin === "true" && showButtonsAdmin) && (
+  <>
 
             <button
-              onClick={() => setShowDeleteUser(true)}
-              className="bg-red-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
-            >
-              Delete a User
-            </button>
-          </>
-        )}
-          
+      onClick={() => setShowAssignUser(true)}
+      className="scale-60 text-white rounded-lg transition duration-200 ml-20 transform hover:scale-80"
+    >
+      Assign New Users
+    </button>
 
+    <button
+      onClick={() => setShowDeleteUser(true)}
+      className="text-l"
+    >
+      Delete a User
+    </button>
+
+    <button 
+      onClick={() => setShowRemoveUser(true)} 
+      className="scale-70 text-white  rounded-lg transition duration-200 transform hover:scale-115 "
+    >
+      Remove User
+    </button>
+  </>
+)}
+
+{(isAdmin === "false" && showButtonsAdmin) && (
+  <>
+  <button onClick={sendInvite} className="flex justify-between transition-500 hover:text-xl ml-40 ">Send Invite </button>
+
+  <button onClick={processInvite} className="flex justify-between transition-500 hover:text-xl " >Process Invite</button>
+
+ <button onClick={() => setShowQuitModal(true)} className="flex justify-between  transition-500 hover:text-xl"> Quit</button>
+
+ </>
+)}
+<button onClick={ () => setShowButtonsAdmin(prev=>!prev)} className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
+</h2>
+          
           {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
           {isAdmin=="true" &&
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
@@ -817,7 +981,7 @@ buttons.forEach((btn) => {
           <div ref={messagesEndRef} /> {                      }
           </div>
           </div>
-
+          
           <div className="mt-2 flex items-center">
 
           <div className="relative">
@@ -938,11 +1102,11 @@ buttons.forEach((btn) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h2 className="text-xl mb-2">Enter New Channel Name</h2>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input data-testid="Channel-Name-Input" type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="Name of New Channel"className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <h3 className="text-xl mt-5 mb-2">Invite User</h3>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="User to invite" className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={(e)=>{ e.preventDefault(); createChannel(e); sendInvite(e); setShowCreatePrivateModal(false);}}className="bg-green-600 px-4 py-2 rounded-lg">Create</button>
               <button onClick={() => setShowCreatePrivateModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
@@ -997,4 +1161,3 @@ buttons.forEach((btn) => {
 }
 
 export default Messages;
-
