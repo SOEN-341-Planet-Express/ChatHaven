@@ -1,7 +1,6 @@
 const request = require('supertest');
 const app = require('../server');
 
-
 //If we connect to the database during testing, we can purge it after we run our tests.
 const mysql = require("mysql2");
 const dbConfig = {
@@ -15,7 +14,7 @@ const dbConfig = {
   
 
 
-describe('User API tests for user privilege system', () => {
+describe('API tests for user privilege system', () => {
     let db;
 
     beforeAll(async () => {
@@ -95,3 +94,4 @@ describe('User API tests for user privilege system', () => {
     });
 
 });
+

@@ -1,14 +1,17 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+
 const http = require("http"); // Required for Socket.io
 const { Server } = require("socket.io"); // Required for Socket.io
+
 
 const PORT = 5001; 
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
 
 // Create an HTTP server and initialize Socket.io
 const server = http.createServer(app);
@@ -18,6 +21,7 @@ const io = new Server(server, {
   },
 });
 
+
 // Connection
 const db = mysql.createConnection({
   host: "srvd12ed324fsd5t34r34.mysql.database.azure.com",
@@ -26,6 +30,7 @@ const db = mysql.createConnection({
   database: "chathaven_DB_NEW",
   port: 3306,
   ssl: { rejectUnauthorized: true },
+  timezone: '+00:00', 
 });
 
 db.connect(err => {
@@ -33,9 +38,26 @@ db.connect(err => {
   console.log("Connected");
 });
 
+
 // WebSocket Connection Handling
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
+
+  // Listen for the user's initial connection and set their status to "online"
+  socket.on("setOnline", (username) => {
+    if (username) {
+      const sql = "UPDATE users SET status = 'online', last_seen = UTC_TIMESTAMP() WHERE username = ?";
+      db.query(sql, [username], (err) => {
+        if (err) {
+          console.error("Error updating status to online:", err);
+        } else {
+          
+          // Broadcast the updated status to all clients
+          io.emit("userStatusUpdate", { username, status: "online" });
+        }
+      });
+    }
+  });
 
   // Listen for incoming messages from the client
   socket.on("sendMessage", (data) => {
@@ -66,12 +88,48 @@ io.on("connection", (socket) => {
     });
   });
 
+  // Listen for user disconnection and set their status to "offline"
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
+
+    // Find the username associated with this socket (you may need to store this mapping)
+    const username = socket.username; // Assuming you store the username in the socket object
+
+    if (username) {
+      const sql = "UPDATE users SET status = 'offline', last_seen = UTC_TIMESTAMP() WHERE username = ?";
+      db.query(sql, [username], (err) => {
+        if (err) {
+          console.error("Error updating status to offline:", err);
+        } else {
+          
+          // Broadcast the updated status to all clients
+          io.emit("userStatusUpdate", { username, status: "offline" });
+        }
+      });
+    }
+  });
+
+  // Listen for manual status updates (e.g., "away")
+  socket.on("setStatus", (data) => {
+    const { username, status } = data;
+
+    if (username && status) {
+      const sql = "UPDATE users SET status = ?, last_seen = UTC_TIMESTAMP() WHERE username = ?";
+      db.query(sql, [status, username], (err) => {
+        if (err) {
+          console.error("Error updating status:", err);
+        } else {
+          
+          // Broadcast the updated status to all clients
+          io.emit("userStatusUpdate", { username, status });
+        }
+      });
+    }
   });
 });
 
 // --------------------- REST Endpoints --------------------- //
+
 
 //New User
 app.post("/register", (req, res) => {
@@ -80,6 +138,7 @@ app.post("/register", (req, res) => {
   // Check if username exists
   const checkUserSQL = "SELECT * FROM users WHERE username = ?";
   db.query(checkUserSQL, [username], (err, results) => {
+
     if (err) return res.status(500).json({ error: "DB error" });
 
     if (results.length > 0) {
@@ -90,8 +149,14 @@ app.post("/register", (req, res) => {
     const insertUserSQL = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
     db.query(insertUserSQL, [username, password, "member"], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
-      res.status(201).json({ message: "Account Created" });
     });
+
+    //Add user permission for general channel
+    const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES ('general', ?)";
+    db.query(addPermissionSQL, [username], (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
+    });
+    res.status(201).json({ message: "Account Created" });
   });
 });
 
@@ -114,7 +179,9 @@ app.post("/login", (req, res) => {
 
 //Create Channel
 app.post("/createChannel", (req, res) => {
-  const {channelName}  = req.body;
+
+  const {channelName, loggedInUser}  = req.body;
+
 
   // Check if channel already exists
   const checkChannelSQL = "SELECT * FROM channel_list WHERE channel_name = ?";
@@ -127,8 +194,10 @@ app.post("/createChannel", (req, res) => {
     }  
 
     //Updates the table of channels to contain the newest channel
-    const updateChannelListSQL = "INSERT INTO channel_list (channel_name) VALUES (?)";
-    db.query(updateChannelListSQL, channelName, (err, result) => {
+
+    const updateChannelListSQL = "INSERT INTO channel_list (channel_name, creator) VALUES (?, ?)";
+    db.query(updateChannelListSQL, [channelName, loggedInUser], (err, result) => {
+
       if (err) return res.status(500).json({ error: "DB error" });
     });
 
@@ -139,13 +208,23 @@ app.post("/createChannel", (req, res) => {
 
 //Delete Channel
 app.post("/deleteChannel", (req, res) => {
-  const {channelName}  = req.body;
+  const {currentChannel}  = req.body;
     //Updates the table of channels to not contain the deleted channel
     const updateChannelListSQL = "DELETE FROM channel_list WHERE channel_name=?";
-    db.query(updateChannelListSQL, channelName, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
+    db.query(updateChannelListSQL, currentChannel, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "DB error" });
+      } else {
+        const eraseMessagesSQL = "DELETE FROM messages WHERE destination=? AND message_type='groupchat'";
+        db.query(eraseMessagesSQL, currentChannel, (err, result) => {
+          if (err){
+            return res.status(500).json({ error: "DB error" });
+          } else {
+            res.status(201).json({ message: "Channel Deleted" });
+          }
+        });
+      }
     });
-    res.status(201).json({ message: "Channel Deleted" });
 });
 
 //Assign users to channels
@@ -216,7 +295,7 @@ app.post("/getChannels", (req, res) => {
       role = result[0].role;
       if(role ==="admin"){
         for(let i = 0; i < results.length; i++){
-            list[i] = results[i].channel_name
+            list[i] = results[i]
           }
           res.status(201).json({ message:list });
         } else {
@@ -224,7 +303,7 @@ app.post("/getChannels", (req, res) => {
           
           db.query(checkUserChannelSQL, [user], (err, result1) => {
             for(let i = 0; i < result1.length; i++){
-              list[i] = result1[i].channel_name
+              list[i] = result1[i]
             }
             res.status(201).json({ message:list });
           });
@@ -250,6 +329,59 @@ app.post("/getPrivateMessage", (req, res) => {
   });
 });
 
+
+//Get the requests to join that you sent which are still pending
+app.post("/getSentRequests", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE invitee = ? AND type='request'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+  
+    res.status(200).json({ message: results });
+  });
+});
+
+//Get the requests to join that you received which are still pending
+app.post("/getReceivedRequests", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE owner = ? AND type='request'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    res.status(200).json({ message: results });
+  });
+});
+
+//Get list of invites you have sent
+app.post("/getSentInvites", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE owner = ? AND type='invite'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    res.status(200).json({ message: results });
+  });
+});
+
+//Get list of invites you have received
+app.post("/getReceivedInvites", (req, res) => {
+  const { user } = req.body; 
+  
+  const getRequestSQL = "SELECT * FROM channel_invites WHERE invitee = ? AND type='invite'";
+  
+  db.query(getRequestSQL, [user], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    
+    res.status(200).json({ message: results });
+  });
+});
+
 //Load messages
 
 app.post("/loadMessages", (req, res) => {
@@ -270,21 +402,25 @@ app.post("/loadMessages", (req, res) => {
 }
 
 
+
 });
 
-// Delete a message
 // Delete a message
 app.post("/deleteMessage", (req, res) => {
   const sql = "DELETE FROM messages WHERE my_row_id = ?";
   db.query(sql, [req.body.id], (err, result) => {
+
     if (err) return res.status(500).json({ message: "Database error" });
 
     // Emit a socket event to notify all clients about the deletion
     io.emit("deleteMessage", { id: req.body.id });
+
     res.json({ message: "Message deleted" });
   });
 });
 
+
+// Send a message
 
 app.post("/sendMessage", (req, res) => {
   const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = req.body;
@@ -292,6 +428,7 @@ app.post("/sendMessage", (req, res) => {
   const mysql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
   db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId || null], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+
     
     // Broadcast the new message to all connected clients via Socket.io
     io.emit("receiveMessage", {
@@ -304,6 +441,7 @@ app.post("/sendMessage", (req, res) => {
       timestamp: new Date().toISOString(),
     });
     
+
     res.status(200).json({ message: "Message sent"})
   });
 });
@@ -314,7 +452,9 @@ app.post("/forgotpassword", (req, res) => {
 
   const mysql = "UPDATE users SET password = ? WHERE username = ?";
   db.query(mysql, [password, username], (err, results) => {
+
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
+
     
     if (results.affectedRows === 0) return res.status(401).json({ message: "Invalid username entry :/"});
 
@@ -323,6 +463,98 @@ app.post("/forgotpassword", (req, res) => {
     res.status(200).json({ message: "Password changed successfully!"})
   });
 });
+
+
+
+//Process invite
+app.post("/processInvite", (req, res) => {
+  const { acceptOrDeny, owner, invitee, channel } = req.body;
+  
+
+  const mysql = "DELETE FROM channel_invites WHERE invitee = (?) AND owner = (?) and channel = (?)";
+  db.query(mysql, [invitee, owner, channel], (err, results) => {
+  });
+
+  if(acceptOrDeny == 'accept'){
+    const mysql2 = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
+  db.query(mysql2, [channel, invitee], (err, results) => {
+    res.status(200).json({ message: "Invite Accepted"})
+  });
+  } else {
+    res.status(200).json({ message: "Invite Denied"})
+  }
+});
+
+//Send invite
+app.post("/sendInvite", (req, res) => {
+  const { invitedUser, loggedInUser, currentChannel } = req.body;
+  if(invitedUser == loggedInUser){
+    return res.status(400).json({ message: "Cannot invite yourself" });
+  } else if(invitedUser == ""){
+    return res.status(400).json({ message: "Must enter a user to invite" });
+  } else if(currentChannel==""){
+    return res.status(400).json({ message: "Must select a channel first" });
+  }
+
+  const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
+  db.query(searchSQL, [currentChannel, invitedUser], (err, results) => {
+    if(results.length > 0){
+      return res.status(400).json({ message: "User is already in channel" });
+    } else {
+      const searchInvitesSQL = "SELECT * FROM channel_invites WHERE invitee=(?) AND owner=(?) AND channel=(?) AND type='invite'";
+      db.query(searchInvitesSQL, [invitedUser, loggedInUser, currentChannel], (err, results1) => {
+        if(results1.length > 0){
+          return res.status(400).json({ message: "User is already invited" });
+        } else {
+          const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'invite')";
+          db.query(mysql, [invitedUser, loggedInUser, currentChannel], (err, results2) => {
+            if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
+            res.status(200).json({ message: "Invite Sent"})
+          });
+        }
+      });
+      
+    }
+  });
+
+  
+  
+});
+
+//Send request
+app.post("/sendRequest", (req, res) => {
+  const { owner, loggedInUser, channelName } = req.body;
+  
+  if(owner == loggedInUser){
+    return res.status(400).json({ message: "Cannot request to join your own channel" });
+  } else if(channelName == ""){
+    return res.status(400).json({ message: "Must enter a channel" });
+  }
+
+  const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
+  db.query(searchSQL, [channelName, loggedInUser], (err, results) => {
+    if(results.length > 0){
+      return res.status(400).json({ message: "You are already in this channel" });
+    } else {
+      const searchInvitesSQL = "SELECT * FROM channel_invites WHERE invitee=(?) AND owner=(?) AND channel=(?) AND type='request'";
+      db.query(searchInvitesSQL, [loggedInUser, owner, channelName], (err, results1) => {
+        if(results1.length > 0){
+          return res.status(400).json({ message: "You have already made a request to join" });
+        } else {
+          const addRequest = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'request')";
+          db.query(addRequest, [loggedInUser, owner, channelName], (err, results2) => {
+            if (err) {
+              return res.status(500).json({message: "Error - not your fault :) database fault", details: err});
+            }
+            res.status(200).json({ message: "Request Sent"})
+          });
+        }
+      }); 
+    }
+  });
+});
+
+
 
 // Delete User
 app.post("/deleteUser", (req, res) => {
@@ -340,9 +572,36 @@ app.post("/deleteUser", (req, res) => {
   });
 });
 
+// Update user status
+app.post("/updateStatus", (req, res) => {
+  const { username, status } = req.body;
+
+  const sql = "UPDATE users SET status = ?, last_seen = UTC_TIMESTAMP() WHERE username = ?";
+  db.query(sql, [status, username], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    res.status(200).json({ message: "Status updated" });
+  });
+});
+
+// Fetch user status
+app.post("/getUserStatus", (req, res) => {
+  const { username } = req.body;
+
+  const sql = "SELECT status, last_seen FROM users WHERE username = ?";
+  db.query(sql, [username], (err, results) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    if (results.length > 0) {
+      res.status(200).json({ status: results[0].status, last_seen: results[0].last_seen });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  });
+});
+
 module.exports = app;
 
 if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 5001;
+
   server.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
 }

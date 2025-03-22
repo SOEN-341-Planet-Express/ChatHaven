@@ -8,6 +8,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import { ToastContainer, toast, Flip } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+
 function App() {
   return (
     <Router>
@@ -17,6 +18,7 @@ function App() {
         <Route path="/Messages" element={<Messages />} />
         <Route path = "/ForgotPassword" element={<ForgotPassword />} />
       </Routes>
+
       <ToastContainer
         position="top-center"
         autoClose={2000}
@@ -30,6 +32,7 @@ function App() {
         theme="dark"
         transition={Flip}
       />
+
     </Router>
   );
 }
