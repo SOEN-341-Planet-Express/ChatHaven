@@ -738,6 +738,7 @@ buttons.forEach((btn) => {
 
     <button
       onClick={() => setShowDeleteUser(true)}
+      test-userid = 'DeleteUser'
       className="text-l"
     >
       Delete a User
@@ -762,7 +763,7 @@ buttons.forEach((btn) => {
 
  </>
 )}
-<button onClick={ () => setShowButtonsAdmin(prev=>!prev)} className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
+<button onClick={ () => setShowButtonsAdmin(prev=>!prev)} test-userid = "ellipsis" className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
 </h2>
           
           <div className="space-y-4">

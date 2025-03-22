@@ -30,11 +30,6 @@ describe('Login Tests', () => {
   it('Allows a user to create an account', () => {
     cy.visit('http://localhost:3000/Signup')
 
-    
-    cy.window().then((win) => {
-      cy.spy(win, 'alert').as('alertSpy')
-    })
-
     // Type into username and password fields
     cy.get('#username').type(username)
     cy.get('#password').type(password)
@@ -42,7 +37,17 @@ describe('Login Tests', () => {
 
     cy.get('button[type="submit"]').click()
 
-    cy.get('@alertSpy').should('have.been.calledWith', 'Account Created!')
+
+    cy.wait(1000)
+          // Type into username and password fields
+    cy.get('#username').type(username)
+    cy.get('#password').type(password)
+
+    // Click login button
+    cy.get('button[type="submit"]').click()
+    cy.wait(1000)
+    
+    cy.contains('h1', `Welcome ${username}`).should('be.visible')
   })
 
 
@@ -83,16 +88,11 @@ describe('Admin Privileges Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
-   // cy.window().then((win) => {
-    //  cy.spy(win, 'alert').as('alertSpy')
-   // })
-
     cy.contains('button', 'Create').click()
     cy.get('input[data-testid="Channel-Name-Input"]').type('Test Channel')
     cy.get('button[data-testid="Channel-Name-Submit"]').click()
 
     cy.contains('li', 'Test Channel').should('be.visible');
-  //  cy.get('@alertSpy').should('have.been.calledWith', 'Channel Created!')
   })
   it('Deletes a test channel', () => {
     cy.visit('http://localhost:3000/Home')
@@ -124,11 +124,15 @@ describe('Admin Privileges Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
+    cy.get('button[test-userid="ellipsis"]').click();
+
     cy.get('button').contains("Delete a User").click()
     cy.get('input[placeholder = "User to delete"]').type(username)
     cy.get('button').contains("Delete User").click()
 
     cy.reload()
+
+    cy.get('button').contains("Private").click()
     cy.get('button').contains(username).should("not.exist")
 
   })
@@ -196,7 +200,9 @@ describe('Message and Channel System Functionality Tests', () => {
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
 
-    cy.get('button').contains('admin').click()
+    cy.get('button').contains("Private").click()
+
+    cy.get('li').contains('admin').click()
     cy.get('input[placeholder = "Type a message..."]').type('Test Message')
     cy.get('#messageField').click();
 
@@ -209,8 +215,11 @@ describe('Message and Channel System Functionality Tests', () => {
     // Click login button
     cy.get('button[type="submit"]').click()
     cy.wait(4000)
+    
+    cy.get('button').contains("Private").click()
 
-    cy.get('button').contains('thekillerturkey').click()
+    cy.get('li').contains('thekillerturkey').click()
+    cy.wait(1000)
     cy.contains('p', 'Test Message').should('exist')
 
     cy.contains('p', 'Test Message')
