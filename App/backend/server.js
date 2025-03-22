@@ -149,18 +149,23 @@ app.post("/createChannel", (req, res) => {
 
 //Delete Channel
 app.post("/deleteChannel", (req, res) => {
-  const {channelName}  = req.body;
+  const {currentChannel}  = req.body;
     //Updates the table of channels to not contain the deleted channel
     const updateChannelListSQL = "DELETE FROM channel_list WHERE channel_name=?";
-    db.query(updateChannelListSQL, channelName, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
+    db.query(updateChannelListSQL, currentChannel, (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: "DB error" });
+      } else {
+        const eraseMessagesSQL = "DELETE FROM messages WHERE destination=? AND message_type='groupchat'";
+        db.query(eraseMessagesSQL, currentChannel, (err, result) => {
+          if (err){
+            return res.status(500).json({ error: "DB error" });
+          } else {
+            res.status(201).json({ message: "Channel Deleted" });
+          }
+        });
+      }
     });
-    const eraseMessagesSQL = "DELETE FROM messages WHERE destination=? AND message_type='groupchat'";
-    db.query(eraseMessagesSQL, channelName, (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
-    });
-
-    res.status(201).json({ message: "Channel Deleted" });
 });
 
 //Assign users to channels
@@ -423,11 +428,36 @@ app.post("/processInvite", (req, res) => {
 //Send invite
 app.post("/sendInvite", (req, res) => {
   const { invitedUser, loggedInUser, currentChannel } = req.body;
+  if(invitedUser == loggedInUser){
+    return res.status(400).json({ message: "Cannot invite yourself" });
+  } else if(invitedUser == ""){
+    return res.status(400).json({ message: "Must enter a user to invite" });
+  } else if(currentChannel==""){
+    return res.status(400).json({ message: "Must select a channel first" });
+  }
 
-  const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'invite')";
-  db.query(mysql, [invitedUser, loggedInUser, currentChannel], (err, results) => {
-    res.status(200).json({ message: "Invite Sent"})
+  const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
+  db.query(searchSQL, [currentChannel, invitedUser], (err, results) => {
+    if(results.length > 0){
+      return res.status(400).json({ message: "User is already in channel" });
+    } else {
+      const searchInvitesSQL = "SELECT * FROM channel_invites WHERE invitee=(?) AND owner=(?) AND channel=(?) AND type='invite'";
+      db.query(searchInvitesSQL, [invitedUser, loggedInUser, currentChannel], (err, results1) => {
+        if(results1.length > 0){
+          return res.status(400).json({ message: "User is already invited" });
+        } else {
+          const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'invite')";
+          db.query(mysql, [invitedUser, loggedInUser, currentChannel], (err, results2) => {
+            if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
+            res.status(200).json({ message: "Invite Sent"})
+          });
+        }
+      });
+      
+    }
   });
+
+  
   
 });
 
@@ -435,12 +465,33 @@ app.post("/sendInvite", (req, res) => {
 app.post("/sendRequest", (req, res) => {
   const { owner, loggedInUser, channelName } = req.body;
   
+  if(owner == loggedInUser){
+    return res.status(400).json({ message: "Cannot request to join your own channel" });
+  } else if(channelName == ""){
+    return res.status(400).json({ message: "Must enter a channel" });
+  }
 
-  const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'request')";
-  db.query(mysql, [loggedInUser, owner, channelName], (err, results) => {
-    res.status(200).json({ message: "Invite Sent"})
+  const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
+  db.query(searchSQL, [channelName, loggedInUser], (err, results) => {
+    if(results.length > 0){
+      return res.status(400).json({ message: "You are already in this channel" });
+    } else {
+      const searchInvitesSQL = "SELECT * FROM channel_invites WHERE invitee=(?) AND owner=(?) AND channel=(?) AND type='request'";
+      db.query(searchInvitesSQL, [loggedInUser, owner, channelName], (err, results1) => {
+        if(results1.length > 0){
+          return res.status(400).json({ message: "You have already made a request to join" });
+        } else {
+          const addRequest = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'request')";
+          db.query(addRequest, [loggedInUser, owner, channelName], (err, results2) => {
+            if (err) {
+              return res.status(500).json({message: "Error - not your fault :) database fault", details: err});
+            }
+            res.status(200).json({ message: "Request Sent"})
+          });
+        }
+      }); 
+    }
   });
-  
 });
 
 
