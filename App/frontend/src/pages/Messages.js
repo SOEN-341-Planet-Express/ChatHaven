@@ -671,27 +671,42 @@ function Messages() {
   
   function listOutMessages(items) {
     return items.map((item) => (
-      <div key={item.my_row_id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
-        <div>
-          <p>
-            <strong className="text-green-400">{item.sender}: </strong>
-            {item.message}
-          </p>
-          {/* Show Message ID only if the user is an admin */}
-          {isAdmin === "true" && (
-            <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
-          )}
-        </div>
-        {isAdmin === "true" && (
-          <div>
-            <button
-              onClick={() => deleteMessage(item.my_row_id)}
-              className="rounded-lg hover:bg-red-700 px-2 py-1"
-            >
-              ❌
-            </button>
+      <div key={item.my_row_id} className="flex flex-col bg-gray-600 p-2 rounded-lg mb-2">
+        {/* Render quoted message if exists */}
+        {item.quoted_message_id && (
+          <div className="border-l-4 border-blue-500 pl-2 mb-1 bg-gray-700 rounded-r-lg">
+            <small className="text-gray-300">
+              <span className="text-blue-400">{item.quoted_sender}</span>:{" "}
+              {item.quoted_message && item.quoted_message.length > 100 
+                ? item.quoted_message.substring(0, 100) + "..." 
+                : item.quoted_message}
+            </small>
           </div>
         )}
+        
+        {/* Main message content */}
+        <div className="flex justify-between">
+          <div>
+            <p>
+              <strong className="text-green-400">{item.sender}: </strong>
+              {item.message}
+            </p>
+            {/* Show Message ID only if the user is an admin */}
+            {isAdmin === "true" && (
+              <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
+            )}
+          </div>
+          {isAdmin === "true" && (
+            <div>
+              <button
+                onClick={() => deleteMessage(item.my_row_id)}
+                className="rounded-lg hover:bg-red-700 px-2 py-1"
+              >
+                ❌
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     ));
   }

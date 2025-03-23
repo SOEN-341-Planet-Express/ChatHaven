@@ -448,21 +448,37 @@ app.post("/loadMessages", (req, res) => {
   const { currentChannel, currentChannelType, loggedInUser } = req.body;
 
   if(currentChannelType=='groupchat'){
-  const mysql = "SELECT * FROM messages WHERE destination=? AND message_type=?";
-  db.query(mysql, [currentChannel, currentChannelType], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-    res.status(200).json({ message: results})
-  });
-} else if(currentChannelType=='dm'){
-  const mysql = "SELECT * FROM messages WHERE ((sender=? AND destination=?) OR (sender=? AND destination=?)) AND message_type=?";
-  db.query(mysql, [currentChannel, loggedInUser, loggedInUser, currentChannel, currentChannelType], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-    res.status(200).json({ message: results})
-  });
-}
-
-
-
+    const mysqlQuery = `
+      SELECT 
+        m.*,
+        q.sender AS quoted_sender,
+        q.message AS quoted_message
+      FROM messages m
+      LEFT JOIN messages q ON m.quoted_message_id = q.my_row_id
+      WHERE m.destination = ? AND m.message_type = ?
+      ORDER BY m.time_sent ASC;
+    `;
+    db.query(mysqlQuery, [currentChannel, currentChannelType], (err, results) => {
+      if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+      res.status(200).json({ message: results})
+    });
+  } else if(currentChannelType=='dm'){
+    const mysqlQuery = `
+      SELECT 
+        m.*,
+        q.sender AS quoted_sender,
+        q.message AS quoted_message
+      FROM messages m
+      LEFT JOIN messages q ON m.quoted_message_id = q.my_row_id
+      WHERE ((m.sender = ? AND m.destination = ?) OR (m.sender = ? AND m.destination = ?))
+        AND m.message_type = ?
+      ORDER BY m.time_sent ASC;
+    `;
+    db.query(mysqlQuery, [currentChannel, loggedInUser, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+      if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+      res.status(200).json({ message: results})
+    });
+  }
 });
 
 // Delete a message
