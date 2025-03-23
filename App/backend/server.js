@@ -144,11 +144,6 @@ app.post("/register", (req, res) => {
       if (err) return res.status(500).json({ error: "DB error" });
     });
 
-    //Add user permission for general channel
-    const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES ('general', ?)";
-    db.query(addPermissionSQL, [username], (err, result) => {
-      if (err) return res.status(500).json({ error: "DB error" });
-    });
     res.status(201).json({ message: "Account Created" });
   });
 });
@@ -190,13 +185,42 @@ app.post("/createChannel", (req, res) => {
 
     const updateChannelListSQL = "INSERT INTO channel_list (channel_name, creator) VALUES (?, ?)";
     db.query(updateChannelListSQL, [channelName, loggedInUser], (err, result) => {
-
-      if (err) return res.status(500).json({ error: "DB error" });
+      if (err){
+        return res.status(500).json({ error: "DB error" });
+      } else {
+        
+        const checkAdminSQL = "SELECT role FROM users WHERE username=?";
+        db.query(checkAdminSQL, [loggedInUser], (err, result) => {
+          if (err) return res.status(500).json({ error: "DB error" });
+          role = result[0].role;
+          if(role ==="admin"){
+            const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, 'ALLUSERS')";
+            db.query(addPermissionSQL, [channelName], (err, result) => {
+              if (err){
+                return res.status(500).json({ error: "DB error" });
+              } else {
+               res.status(201).json({ message: "Channel Created" });
+              }
+          });
+          } else {
+            const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
+            db.query(addPermissionSQL, [channelName, loggedInUser], (err, result) => {
+              if (err){
+                return res.status(500).json({ error: "DB error" });
+              } else {
+                res.status(201).json({ message: "Channel Created" });
+              }
+            });
+          }
+        });   
+      }
     });
 
-    res.status(201).json({ message: "Channel Created" });
+    
   });
 });
+
+
 
 
 //Delete Channel
@@ -213,7 +237,11 @@ app.post("/deleteChannel", (req, res) => {
           if (err){
             return res.status(500).json({ error: "DB error" });
           } else {
-            res.status(201).json({ message: "Channel Deleted" });
+            const eraseMessagesSQL = "DELETE FROM channel_access WHERE channel_name=?";
+            db.query(eraseMessagesSQL, currentChannel, (err, result) => {
+              res.status(201).json({ message: "Channel Deleted" });
+            });
+            
           }
         });
       }
@@ -281,26 +309,58 @@ app.post("/getChannels", (req, res) => {
     
     //Check if user is admin before passing list of channels
     var role;
-    const list = []
+    var generalList = []
+    var userList = [] 
+    var discoverList = []
     const checkAdminSQL = "SELECT role FROM users WHERE username=?";
     db.query(checkAdminSQL, [user], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
       role = result[0].role;
       if(role ==="admin"){
         for(let i = 0; i < results.length; i++){
-            list[i] = results[i]
+          generalList[i] = results[i]
           }
-          res.status(201).json({ message:list });
+          var allChannels = [generalList, [], []]
+          res.status(201).json({ message:allChannels });
         } else {
-          const checkUserChannelSQL = "SELECT * FROM channel_access WHERE permitted_users=?";
+          const checkGeneralChannelSQL = "SELECT * FROM channel_access WHERE permitted_users='ALLUSERS'";
+          db.query(checkGeneralChannelSQL, [], (err, result1) => {
+            if (err) {
+              return res.status(500).json({ error: "DB error" });
+            } else {
+              generalList = result1
+              const checkUserChannelSQL = "SELECT * FROM channel_access WHERE permitted_users=(?)";
+              db.query(checkUserChannelSQL, [user], (err, result1) => {
+                if (err) {
+                  return res.status(500).json({ error: "DB error" });
+                } else {
+                  userList = result1
+                  var tempCombined = generalList.concat(userList)
+                  var nameCombined = []
+                  for(var i = 0; i < tempCombined.length;i++){
+                    nameCombined[i] = tempCombined[i].channel_name
+                  }
+                  var tracker = 0;
+                  
+                  for(let i = 0; i < results.length; i++){
+                    if(!nameCombined.includes(results[i].channel_name)){
+                      discoverList[tracker] = results[i]
+                      tracker++
+                    }
+                  }
           
-          db.query(checkUserChannelSQL, [user], (err, result1) => {
-            for(let i = 0; i < result1.length; i++){
-              list[i] = result1[i]
+                  var allChannels = [generalList, userList, discoverList]
+                  
+                  res.status(201).json({ message:allChannels });
+                }
+                
+              });
             }
-            res.status(201).json({ message:list });
+            
           });
-        
+
+          
+          
         }
       }); 
   });
