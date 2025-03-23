@@ -10,7 +10,12 @@ function Messages() {
   const navigate = useNavigate();
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
+  //channelList is general channels
   const [channelList, setChannelList] = useState([]);
+  const [userChannelList, setUserChannelList] = useState([]);
+  const [discoverChannelList, setDiscoverChannelList] = useState([]);
+
+
   const [privateMessageList, setPrivateMessageList] = useState([]);
 
  
@@ -89,7 +94,10 @@ function Messages() {
 
       const data = await response.json();
       if (response.ok) {
-        setChannelList(data.message);
+        setChannelList(data.message[0]);
+        setUserChannelList(data.message[1]);
+        setDiscoverChannelList(data.message[2]);
+
       } else {
         alert(data.message);
       }
@@ -546,6 +554,14 @@ function Messages() {
     ));
   }
 
+  function listOutDiscover(items) {
+    return items.map((item, index) => (
+      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200">
+          {item.channel_name}
+      </li>
+    ));
+  }
+
   function listOutDMs(items) {
     return items.map((item, index) => (
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
@@ -796,9 +812,10 @@ function Messages() {
   };
 
   function getChannelOwner(queryName){
-    for(var i = 0; i < channelList.length; i++){
-      if(queryName==channelList[i].channel_name){
-        return channelList[i].creator;
+    var tempCombined = channelList.concat(userChannelList, discoverChannelList)
+    for(var i = 0; i < tempCombined.length; i++){
+      if(queryName==tempCombined[i].channel_name){
+        return tempCombined[i].creator;
       }
     }
   }
@@ -907,14 +924,15 @@ buttons.forEach((btn) => {
                 <h2 className="text-xl font-semibold">Your Channels</h2>
                 <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
               </div>
-              
             </div>
+            <ul className="space-y-2 mb-4">{listOutChannels(userChannelList)}</ul>
             <hr className="border-t-4 border-white-600 mb-2"></hr>
             <div className="flex justify-between items-center mb-4">
             <h8 className="flex justify-between text-xl font-semibold mb-4">Discover</h8>
             <button onClick={() => setShowJoinModal(true)} className="flex justify-between  mb-4">Join 
             </button>
             </div>
+            <ul className="space-y-2 mb-4">{listOutDiscover(discoverChannelList)}</ul>
             </>) }
             {showMessageList && <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>}
 
@@ -974,7 +992,7 @@ buttons.forEach((btn) => {
           <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
           
           <button onClick={() => setShowInviteModal(true)} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
-          </h2>
+          
 
           <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] overflow-y-auto">
