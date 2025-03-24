@@ -207,7 +207,7 @@ describe('Message and Channel System Functionality Tests', () => {
     cy.get('#messageField').click();
 
     cy.get('button').contains("Logout").click()
-    cy.contains('input[placeholder = "Type a message..."]').should('not.exist')
+    cy.get('input[placeholder = "Type a message..."]').should('not.exist')
 
     cy.get('#username').type('admin')
     cy.get('#password').type('admin')
@@ -219,7 +219,6 @@ describe('Message and Channel System Functionality Tests', () => {
     cy.get('button').contains("Private").click()
 
     cy.get('li').contains('thekillerturkey').click()
-    cy.wait(1000)
     cy.contains('p', 'Test Message').should('exist')
 
     cy.contains('p', 'Test Message')
