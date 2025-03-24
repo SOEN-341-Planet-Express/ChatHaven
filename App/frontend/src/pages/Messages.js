@@ -10,6 +10,8 @@ function Messages() {
   const navigate = useNavigate();
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
+  const [isCreator, setIsCreator] = useState("");
+
   //channelList is general channels
   const [channelList, setChannelList] = useState([]);
   const [userChannelList, setUserChannelList] = useState([]);
@@ -193,6 +195,9 @@ function Messages() {
     if(acceptOrDeny || currentInvite){
       processInvite()
     }
+    if(isCreator){
+      checkIsCreator()
+    }
 
     getReceivedInvites();
     getSentInvites();
@@ -201,7 +206,7 @@ function Messages() {
     getDms();
     checkAdmin();
     getChannels();
-  }, [navigate, currentChannel, currentChannelType, acceptOrDeny, currentInvite]);
+  }, [navigate, currentChannel, currentChannelType, acceptOrDeny, currentInvite, isCreator]);
 
   // Initialize the socket connection
   useEffect(() => {
@@ -418,12 +423,7 @@ function Messages() {
     if (!channelName) return alert("Please enter a channel name.");
   };
 
-  const quitChannel = async (e) => {
-    e.preventDefault();
-    if (!channelName) return alert("Please enter a channel name.");
-    if (!channelList.includes(channelName)) return alert("Channel does not exist."); 
-    // <- Added check
-  };
+
   
   const createPrivateChannel = async (e) => {
     e.preventDefault();
@@ -490,6 +490,37 @@ function Messages() {
     }
   }
 
+  const quitChannel = async (e) => {
+    e.preventDefault()
+    
+    const response = await fetch("http://localhost:5001/quitChannel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loggedInUser, currentChannel }),
+    })
+    
+    const data = await response.json()
+
+    if (response.ok) {
+
+      toast.success('You have left channel!', {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        }); 
+
+      setShowQuitModal(false)
+    } else {
+      alert(data.message)
+    }
+  }
+
 
   const loadMessages = async () => {
     const response = await fetch("http://localhost:5001/loadMessages", {
@@ -546,15 +577,29 @@ function Messages() {
     setMessageToSend("");
     setQuotedMessage(null);
   };
+
+  const checkIsCreator = async (e) => {
+    //e.preventDefault()
+    const response = await fetch("http://localhost:5001/checkIsCreator", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ loggedInUser, currentChannel }),
+  });
+  const data = await response.json();
+  if (response.ok) {
+    setIsCreator(data.message);
+  } else {
+    alert(data.message);
+  }
+}
   
   function listOutChannels(items) {
     return items.map((item, index) => (
       <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200"
         onClick={(e) => {
-
         setCurrentChannel(item.channel_name);
         setCurrentChannelType('groupchat');
-
+        setIsCreator("changed")
         }}>
           {item.channel_name}
       </li>
@@ -990,6 +1035,13 @@ buttons.forEach((btn) => {
       Assign New Users
     </button>
 
+    <button 
+      onClick={() => setShowRemoveUser(true)} 
+      className="scale-70 text-white  rounded-lg transition duration-200 transform hover:scale-115 "
+    >
+      Remove User
+    </button>
+
     <button
       onClick={() => setShowDeleteUser(true)}
       test-userid = 'DeleteUser'
@@ -997,34 +1049,23 @@ buttons.forEach((btn) => {
     >
       Delete a User
     </button>
-
-    <button 
-      onClick={() => setShowRemoveUser(true)} 
-      className="scale-70 text-white  rounded-lg transition duration-200 transform hover:scale-115 "
-    >
-      Remove User
-    </button>
   </>
 )}
 
 {(isAdmin === "false" && showButtonsAdmin) && (
   <>
-  <button onClick={sendInvite} className="flex justify-between transition-500 hover:text-xl ml-40 ">Send Invite </button>
-
-  <button onClick={processInvite} className="flex justify-between transition-500 hover:text-xl " >Process Invite</button>
-
- <button onClick={() => setShowQuitModal(true)} className="flex justify-between  transition-500 hover:text-xl"> Quit</button>
+  {(isCreator === "true" &&(
+  <button onClick={() => setShowInviteModal(true)} className="flex justify-end transition-500 hover:text-xl ml-40 ">Send Invite</button>))}
+  {(isCreator === "false" && (
+    <button onClick={() => setShowQuitModal(true)} className="flex justify-end  transition-500 hover:text-xl">Quit</button>
+  ))}
+  
 
  </>
 )}
 <button onClick={ () => setShowButtonsAdmin(prev=>!prev)} test-userid = "ellipsis" className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
 </h2>
           
-          {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
-          {isAdmin=="true" &&
-          <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
-          
-          <button onClick={() => setShowInviteModal(true)} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
           
 
           <div className="space-y-4">
@@ -1145,7 +1186,7 @@ buttons.forEach((btn) => {
             <h2 className="text-xl mb-4">Enter User to Invite</h2>
             <input type="text" value={invitedUser} onChange={(e) => setInvitedUser(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={sendInvite} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={sendInvite} className="bg-green-600 px-4 py-2 rounded-lg">Invite</button>
               <button onClick={() => setShowInviteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
@@ -1168,11 +1209,11 @@ buttons.forEach((btn) => {
       {showQuitModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl mb-4">Enter Channel to Quit</h2>
-            <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <h2 className="text-xl mb-4">Do you really wish to quit?</h2>
+            
             <div className="mt-4 flex justify-between">
-              <button onClick={quitChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Quit</button>
-              <button onClick={() => setShowQuitModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+              <button onClick={quitChannel} className="bg-yellow-500 px-4 py-2 rounded-lg">Yes</button>
+              <button onClick={() => setShowQuitModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">No</button>
             </div>
           </div>
         </div>

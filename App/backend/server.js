@@ -292,6 +292,19 @@ app.post("/removeUsers", (req, res) => {
   
 });
 
+//Remove users from channel
+app.post("/quitChannel", (req, res) => {
+  const {loggedInUser, currentChannel}  = req.body;
+  
+  const removeFromUserListSQL = "DELETE FROM channel_access WHERE (permitted_users=? AND channel_name=?)";
+  
+    db.query(removeFromUserListSQL, [loggedInUser, currentChannel], (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
+      res.status(201).json({ message: "Succesfully quit channel" });
+    });
+  
+});
+
 //Check if user is admin
 app.post("/checkAdmin", (req, res) => {
   const {user}  = req.body;
@@ -301,6 +314,21 @@ app.post("/checkAdmin", (req, res) => {
       if (err) return res.status(500).json({ error: "DB error" });
       const role = result[0].role;
       if(role=="admin")
+        res.status(201).json({ message: "true" });
+      else{res.status(201).json({ message: "false" });}
+    });
+  
+});
+
+//Check if user is creator of channel
+app.post("/checkIsCreator", (req, res) => {
+  const {loggedInUser, currentChannel}  = req.body;
+  
+  const checkCreatorSQL = "SELECT * FROM channel_list WHERE creator=(?) and channel_name=(?)";
+    db.query(checkCreatorSQL, [loggedInUser, currentChannel], (err, result) => {
+      if (err) return res.status(500).json({ error: "DB error" });
+      
+      if(result.length > 0)
         res.status(201).json({ message: "true" });
       else{res.status(201).json({ message: "false" });}
     });
