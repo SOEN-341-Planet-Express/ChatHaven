@@ -54,6 +54,8 @@ function Messages() {
 
   const [userStatus, setUserStatus] = useState({});
 
+  const [quotedMessage, setQuotedMessage] = useState(null);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({block: "end"});
   };
@@ -531,13 +533,18 @@ function Messages() {
   const sendMessage = (e) => {
     e.preventDefault();
     if (!messageToSend.trim() || !socket) return;
+    
     socket.emit("sendMessage", {
       messageToSend,
       loggedInUser,
       currentChannel,
       currentChannelType,
+      quotedMessageId: quotedMessage ? quotedMessage.my_row_id : null,
     });
+
+    // Clear both the message input and quoted message
     setMessageToSend("");
+    setQuotedMessage(null);
   };
   
   function listOutChannels(items) {
@@ -669,29 +676,55 @@ function Messages() {
   };
 
   
+  const handleQuoteMessage = (message) => {
+    setQuotedMessage(message);
+    setMessageToSend(`@${message.sender} `);
+  };
+
   function listOutMessages(items) {
     return items.map((item) => (
-      <div key={item.my_row_id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
-        <div>
-          <p>
-            <strong className="text-green-400">{item.sender}: </strong>
-            {item.message}
-          </p>
-          {/* Show Message ID only if the user is an admin */}
-          {isAdmin === "true" && (
-            <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
-          )}
-        </div>
-        {isAdmin === "true" && (
-          <div>
-            <button
-              onClick={() => deleteMessage(item.my_row_id)}
-              className="rounded-lg hover:bg-red-700 px-2 py-1"
-            >
-              ❌
-            </button>
+      <div key={item.my_row_id} className="flex flex-col bg-gray-600 p-2 rounded-lg mb-2">
+        {/* Render quoted message if exists */}
+        {item.quoted_message_id && (
+          <div className="border-l-4 border-blue-500 pl-2 mb-1 bg-gray-700 rounded-r-lg">
+            <small className="text-gray-300">
+              <span className="text-blue-400">{item.quoted_sender}</span>:{" "}
+              {item.quoted_message && item.quoted_message.length > 100 
+                ? item.quoted_message.substring(0, 100) + "..." 
+                : item.quoted_message}
+            </small>
           </div>
         )}
+        
+        {/* Main message content */}
+        <div className="flex justify-between">
+          <div>
+            <p>
+              <strong className="text-green-400">{item.sender}: </strong>
+              {item.message}
+            </p>
+            {/* Show Message ID only if the user is an admin */}
+            {isAdmin === "true" && (
+              <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleQuoteMessage(item)}
+              className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+            >
+              💬
+            </button>
+            {isAdmin === "true" && (
+              <button
+                onClick={() => deleteMessage(item.my_row_id)}
+                className="rounded-lg hover:bg-red-700 px-2 py-1"
+              >
+                ❌
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     ));
   }
@@ -1001,32 +1034,60 @@ buttons.forEach((btn) => {
           </div>
           </div>
           
-          <div className="mt-2 flex items-center">
-
-          <div className="relative">
-            <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="bg-gray-700 border border-gray-600 p-3 mr-2 rounded-lg">
-              😀
-            </button>
-
-            {showEmojiPicker && (
-              <div className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50">
-                <Picker onEmojiClick={onEmojiClick} />
+          <div className="mt-2 flex flex-col">
+            {/* Quote Preview */}
+            {quotedMessage && (
+              <div className="mb-2 p-2 bg-gray-700 border-l-4 border-blue-500 rounded flex justify-between items-center">
+                <div className="flex-1">
+                  <span className="text-sm">
+                    Replying to <strong className="text-blue-400">{quotedMessage.sender}</strong>:{" "}
+                    <span className="text-gray-300">
+                      {quotedMessage.message.length > 100
+                        ? quotedMessage.message.substring(0, 100) + "..."
+                        : quotedMessage.message}
+                    </span>
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setQuotedMessage(null)} 
+                  className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  ✕
+                </button>
               </div>
             )}
-          </div>
-
-          <input
+            
+            {/* Message Input Area */}
+            <div className="flex items-center">
+              <div className="relative">
+                <button
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  className="bg-gray-700 border border-gray-600 p-3 mr-2 rounded-lg"
+                >
+                  😀
+                </button>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50">
+                    <Picker onEmojiClick={onEmojiClick} />
+                  </div>
+                )}
+              </div>
+              <input
                 type="text"
                 value={messageToSend}
                 onChange={(e) => setMessageToSend(e.target.value)}
-                onKeyDown={handleKeyDown} // Add this line
-              placeholder="Type a message..."
-              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
-            />
-         
-          <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>
-            Send
-          </button>
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message..."
+                className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
+              />
+              <button
+                id="messageField"
+                className="bg-gray-500 w-1/6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                onClick={sendMessage}
+              >
+                Send
+              </button>
+            </div>
           </div>
 
           </div>

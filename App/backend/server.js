@@ -61,10 +61,16 @@ io.on("connection", (socket) => {
 
   // Listen for incoming messages from the client
   socket.on("sendMessage", (data) => {
-    const { messageToSend, loggedInUser, currentChannel, currentChannelType } = data;
-    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)";
+    const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = data;
+    const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
     
-    db.query(sql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+    db.query(sql, [
+      messageToSend,
+      loggedInUser,
+      currentChannel,
+      currentChannelType,
+      quotedMessageId || null
+    ], (err, results) => {
       if (err) {
         console.error("Database error:", err);
         return;
@@ -76,6 +82,7 @@ io.on("connection", (socket) => {
         sender: loggedInUser,
         destination: currentChannel,
         messageType: currentChannelType,
+        quoted_message_id: quotedMessageId || null,
         timestamp: new Date().toISOString(),
       });
     });
@@ -441,21 +448,37 @@ app.post("/loadMessages", (req, res) => {
   const { currentChannel, currentChannelType, loggedInUser } = req.body;
 
   if(currentChannelType=='groupchat'){
-  const mysql = "SELECT * FROM messages WHERE destination=? AND message_type=?";
-  db.query(mysql, [currentChannel, currentChannelType], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-    res.status(200).json({ message: results})
-  });
-} else if(currentChannelType=='dm'){
-  const mysql = "SELECT * FROM messages WHERE ((sender=? AND destination=?) OR (sender=? AND destination=?)) AND message_type=?";
-  db.query(mysql, [currentChannel, loggedInUser, loggedInUser, currentChannel, currentChannelType], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-    res.status(200).json({ message: results})
-  });
-}
-
-
-
+    const mysqlQuery = `
+      SELECT 
+        m.*,
+        q.sender AS quoted_sender,
+        q.message AS quoted_message
+      FROM messages m
+      LEFT JOIN messages q ON m.quoted_message_id = q.my_row_id
+      WHERE m.destination = ? AND m.message_type = ?
+      ORDER BY m.time_sent ASC;
+    `;
+    db.query(mysqlQuery, [currentChannel, currentChannelType], (err, results) => {
+      if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+      res.status(200).json({ message: results})
+    });
+  } else if(currentChannelType=='dm'){
+    const mysqlQuery = `
+      SELECT 
+        m.*,
+        q.sender AS quoted_sender,
+        q.message AS quoted_message
+      FROM messages m
+      LEFT JOIN messages q ON m.quoted_message_id = q.my_row_id
+      WHERE ((m.sender = ? AND m.destination = ?) OR (m.sender = ? AND m.destination = ?))
+        AND m.message_type = ?
+      ORDER BY m.time_sent ASC;
+    `;
+    db.query(mysqlQuery, [currentChannel, loggedInUser, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+      if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
+      res.status(200).json({ message: results})
+    });
+  }
 });
 
 // Delete a message
@@ -476,10 +499,10 @@ app.post("/deleteMessage", (req, res) => {
 // Send a message
 
 app.post("/sendMessage", (req, res) => {
-  const { messageToSend, loggedInUser, currentChannel, currentChannelType } = req.body;
+  const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = req.body;
 
-  const mysql = "insert into messages (message, sender, destination, time_sent, message_type) values (?, ?, ?, current_timestamp, ?);";
-  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType], (err, results) => {
+  const mysql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
+  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId || null], (err, results) => {
     if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
 
     
@@ -490,6 +513,7 @@ app.post("/sendMessage", (req, res) => {
       sender: loggedInUser,
       destination: currentChannel,
       messageType: currentChannelType,
+      quoted_message_id: quotedMessageId || null,
       timestamp: new Date().toISOString(),
     });
     
