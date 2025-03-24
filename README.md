@@ -102,8 +102,26 @@ http://localhost:3000/home
 - Secretary: Ulysse Allard
 - Product Owner(s): Alexandre Raymond
 - Development member(s): Paria Jafarian, Yénita Aman, Elliot Vinet
+      
+    - Yénita Aman (backend)
+    - Alexandre Raymond (backend and frontend)
+    - Elliot Vinet (backend and frontend)
+    - Paria Jafarian (frontend)
+    - Ulysse Allard (backend and frontend)
+    - Zachary Cohen (backend)
   
 ## Roles for Sprint 3
-To be defined.
+- Scrum Master: Elliot Vinet
+- Secretary: Paria Jafarian
+- Product Owner(s): Yénita Aman
+- Development member(s): Zachary Cohen, Ulysse Allard, Alexandre Raymond
+      
+    - Yénita Aman (backend and frontend)
+    - Alexandre Raymond (backend and frontend)
+    - Elliot Vinet (backend and frontend)
+    - Paria Jafarian (backend and frontend)
+    - Ulysse Allard (backend and frontend)
+    - Zachary Cohen (backend)
+      
 ## Roles for Sprint 4
 To be defined.
