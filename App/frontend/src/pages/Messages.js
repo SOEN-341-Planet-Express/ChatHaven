@@ -10,11 +10,18 @@ function Messages() {
   const navigate = useNavigate();
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
+  //channelList is general channels
   const [channelList, setChannelList] = useState([]);
+  const [userChannelList, setUserChannelList] = useState([]);
+  const [discoverChannelList, setDiscoverChannelList] = useState([]);
+
+
   const [privateMessageList, setPrivateMessageList] = useState([]);
 
  
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [showCreatePrivateModal, setShowCreatePrivateModal] = useState(false);
   const [showMessageList, setShowMessageList] = useState(false);
@@ -33,12 +40,21 @@ function Messages() {
   const [showButtonsAdmin, setShowButtonsAdmin] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [channelName, setChannelName] = useState("");
+  const [invitedUser, setInvitedUser] = useState("");
+
   const [username, setUsername] = useState("")
+  const [acceptOrDeny, setAcceptOrDeny] = useState("")
+  const [currentInvite, setCurrentInvite] = useState("")
+
   const [currentChannelType, setCurrentChannelType] = useState("")
   const [messageToSend, setMessageToSend] = useState("")
   const [currentChannel, setCurrentChannel] = useState("")
   const [socket, setSocket] = useState(null);
   const messagesEndRef = useRef(null); 
+
+  const [userStatus, setUserStatus] = useState({});
+
+  const [quotedMessage, setQuotedMessage] = useState(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({block: "end"});
@@ -80,7 +96,10 @@ function Messages() {
 
       const data = await response.json();
       if (response.ok) {
-        setChannelList(data.message);
+        setChannelList(data.message[0]);
+        setUserChannelList(data.message[1]);
+        setDiscoverChannelList(data.message[2]);
+
       } else {
         alert(data.message);
       }
@@ -171,6 +190,9 @@ function Messages() {
     if(currentChannel || currentChannelType){
       loadMessages()
     }
+    if(acceptOrDeny || currentInvite){
+      processInvite()
+    }
 
     getReceivedInvites();
     getSentInvites();
@@ -179,7 +201,7 @@ function Messages() {
     getDms();
     checkAdmin();
     getChannels();
-  }, [navigate, currentChannel, currentChannelType]);
+  }, [navigate, currentChannel, currentChannelType, acceptOrDeny, currentInvite]);
 
   // Initialize the socket connection
   useEffect(() => {
@@ -217,6 +239,104 @@ function Messages() {
       setMessageList((prevMessages) => prevMessages.filter((msg) => msg.my_row_id !== data.id));
     });
     return () => socket.off("deleteMessage");
+  }, [socket]);
+
+  useEffect(() => {
+    let awayTimer;
+  
+    const resetAwayTimer = () => {
+      // Clear the existing timer
+      clearTimeout(awayTimer);
+  
+      // Set status to "online"
+      fetch("http://localhost:5001/updateStatus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loggedInUser, status: "online" }),
+      });
+  
+      // Set a new timer for "away" status
+      awayTimer = setTimeout(() => {
+        fetch("http://localhost:5001/updateStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loggedInUser, status: "away" }),
+        });
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+  
+    // Reset the timer on user activity
+    window.addEventListener("mousemove", resetAwayTimer);
+    window.addEventListener("keydown", resetAwayTimer);
+  
+    // Initialize the timer
+    resetAwayTimer();
+  
+    // Cleanup
+    return () => {
+      clearTimeout(awayTimer);
+      window.removeEventListener("mousemove", resetAwayTimer);
+      window.removeEventListener("keydown", resetAwayTimer);
+    };
+  }, [loggedInUser]);
+  
+
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      const statusMap = {};
+      for (const user of privateMessageList) {
+        const response = await fetch("http://localhost:5001/getUserStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: user }),
+        });
+        const data = await response.json();
+        statusMap[user] = data;
+      }
+      setUserStatus(statusMap);
+    };
+  
+    if (privateMessageList.length > 0) {
+      fetchUserStatus();
+    }
+  }, [privateMessageList]);
+
+
+  useEffect(() => {
+    if (socket && loggedInUser) {
+      socket.emit("setOnline", loggedInUser);
+  
+      const handleBeforeUnload = () => {
+        fetch("http://localhost:5001/updateStatus", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loggedInUser, status: "offline" }),
+        });
+      };
+  
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [socket, loggedInUser]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    // Listen for status updates from the server
+    socket.on("userStatusUpdate", (data) => {
+      setUserStatus((prev) => ({
+        ...prev,
+        [data.username]: { status: data.status, last_seen: new Date().toISOString() },
+      }));
+    });
+  
+    // Cleanup
+    return () => {
+      socket.off("userStatusUpdate");
+    };
   }, [socket]);
   
   const createChannel = async (e) => {
@@ -264,38 +384,16 @@ function Messages() {
 
   const deleteChannel = async (e) => {
     e.preventDefault();
-    if (!channelName) return toast.info('Please enter a channel name', {
-    position: "top-center",
-    autoClose: 2000,
-    hideProgressBar: false,
-    closeOnClick: false,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-    theme: "dark",
-    transition: Flip,
-    });
-  if (!channelList.includes(channelName)) return toast.error('Channel does not exist.', {
-    position: "top-center",
-    autoClose: 2000,
-    hideProgressBar: false,
-    closeOnClick: false,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-    theme: "dark",
-    transition: Flip,
-    })
-    
+
     const response = await fetch("http://localhost:5001/deleteChannel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ channelName }),
+      body: JSON.stringify({ currentChannel }),
     });
   
     const data = await response.json();
     if (response.ok) {
-      toast.success('Channel Deleted!', {
+      toast.success(data.message, {
         position: "top-center",
         autoClose: 2000,
         hideProgressBar: false,
@@ -308,7 +406,7 @@ function Messages() {
         });      
       setChannelList(channelList.filter(channel => channel !== channelName));
       setChannelName("");
-      setShowDeleteModal(false);
+      
     } else {
       alert(data.message);
     }
@@ -397,7 +495,7 @@ function Messages() {
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentChannel }),
+      body: JSON.stringify({ currentChannel, currentChannelType }),
     })
     
     const data = await response.json()
@@ -435,13 +533,18 @@ function Messages() {
   const sendMessage = (e) => {
     e.preventDefault();
     if (!messageToSend.trim() || !socket) return;
+    
     socket.emit("sendMessage", {
       messageToSend,
       loggedInUser,
       currentChannel,
       currentChannelType,
+      quotedMessageId: quotedMessage ? quotedMessage.my_row_id : null,
     });
+
+    // Clear both the message input and quoted message
     setMessageToSend("");
+    setQuotedMessage(null);
   };
   
   function listOutChannels(items) {
@@ -449,11 +552,19 @@ function Messages() {
       <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200"
         onClick={(e) => {
 
-        setCurrentChannel(item);
+        setCurrentChannel(item.channel_name);
         setCurrentChannelType('groupchat');
 
         }}>
-          {item}
+          {item.channel_name}
+      </li>
+    ));
+  }
+
+  function listOutDiscover(items) {
+    return items.map((item, index) => (
+      <li key={index} className="btn bg-gray-600 hover:bg-gray-500 p-4 w-full text-left rounded-lg cursor-pointer transition duration-200">
+          {item.channel_name}
       </li>
     ));
   }
@@ -463,12 +574,28 @@ function Messages() {
       <li key={index} className="bg-gray-600 hover:bg-gray-500 p-2 rounded-lg cursor-pointer transition duration-200">
         <button 
           onClick={(e) => {
-            setCurrentChannel(item);setCurrentChannelType('dm');
-
+            setCurrentChannel(item);
+            setCurrentChannelType('dm');
           }} 
-          className="w-full text-left p-2"
+          className="w-full text-left p-2 flex justify-between items-center"
         >
-          {item}
+          <span>{item}</span> {/* Username on the left */}
+          <span 
+            className={`text-sm ${
+              userStatus[item]?.status === "online" ? "text-green-400" : 
+              userStatus[item]?.status === "away" ? "text-yellow-400" : 
+              "text-red-400"
+            }`}
+            title={
+              userStatus[item]?.status === "offline" 
+                ? `Last seen: ${new Date(userStatus[item]?.last_seen).toLocaleString()}` 
+                : ""
+            }
+          >
+            {userStatus[item]?.status === "online" ? "Online" : 
+             userStatus[item]?.status === "away" ? "Away" : 
+             "Offline"}
+          </span>
         </button>
       </li>
     ));
@@ -476,32 +603,44 @@ function Messages() {
 
   function listOutSentRequests(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
-          You have asked user {item.owner} to join channel {item.channel}  
+      <li key={index} className="bg-gray-600 pl-4 pt-2 pb-2 rounded-lg cursor-pointer transition duration-200">
+          <p>Requested user: <text className="text-green-400">{item.owner}</text></p>
+          <p className="pb-2">For channel: <text className="text-yellow-400">{item.channel} </text></p>
+          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("deny") ; setCurrentInvite(item);}}>Cancel</button> 
       </li>
     ));
   }
 
   function listOutReceivedRequests(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
-          User {item.invitee} has asked to join channel {item.channel}  
+      <li key={index} className="bg-gray-600 pl-4 pt-2 pb-2 rounded-lg cursor-pointer transition duration-200">
+          <p>Request from: <text className="text-green-400">{item.invitee}</text></p>
+          <p className="pb-2">For channel: <text className="text-yellow-400">{item.channel} </text></p>
+          <p><button className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("accept") ; setCurrentInvite(item);}}>Accept</button>
+          <text className="px-2"></text>
+          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("deny") ; setCurrentInvite(item);}}>Deny</button></p> 
       </li>
     ));
   }
 
   function listOutSentInvites(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
-          You have asked {item.invitee} to join channel {item.channel}  
+      <li key={index} className="bg-gray-600 pl-4 pt-2 pb-2 rounded-lg cursor-pointer transition duration-200">
+          <p>Invited user: <text className="text-green-400">{item.invitee}</text></p>
+          <p className="pb-2">To channel: <text className="text-yellow-400">{item.channel} </text></p>
+          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("deny") ; setCurrentInvite(item);}}>Cancel</button> 
       </li>
     ));
   }
 
   function listOutReceivedInvites(items) {
     return items.map((item, index) => (
-      <li key={index} className="bg-gray-600 hover:bg-gray-500 p-4 rounded-lg cursor-pointer transition duration-200">
-          User {item.owner} has invited you to join channel {item.channel}  
+      <li key={index} className="bg-gray-600 pl-4 pt-2 pb-2 rounded-lg cursor-pointer transition duration-200">
+          <p>Invite from: <text className="text-green-400">{item.owner}</text></p>
+          <p className="pb-2">To channel: <text className="text-yellow-400">{item.channel} </text></p>
+          <p><button className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("accept") ; setCurrentInvite(item);}}>Accept</button>
+          <text className="px-2"></text>
+          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("deny") ; setCurrentInvite(item);}}>Deny</button></p> 
       </li>
     ));
   }
@@ -537,29 +676,55 @@ function Messages() {
   };
 
   
+  const handleQuoteMessage = (message) => {
+    setQuotedMessage(message);
+    setMessageToSend(`@${message.sender} `);
+  };
+
   function listOutMessages(items) {
     return items.map((item) => (
-      <div key={item.my_row_id} className="flex justify-between bg-gray-600 p-2 rounded-lg">
-        <div>
-          <p>
-            <strong className="text-green-400">{item.sender}: </strong>
-            {item.message}
-          </p>
-          {/* Show Message ID only if the user is an admin */}
-          {isAdmin === "true" && (
-            <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
-          )}
-        </div>
-        {isAdmin === "true" && (
-          <div>
-            <button
-              onClick={() => deleteMessage(item.my_row_id)}
-              className="rounded-lg hover:bg-red-700 px-2 py-1"
-            >
-              ❌
-            </button>
+      <div key={item.my_row_id} className="flex flex-col bg-gray-600 p-2 rounded-lg mb-2">
+        {/* Render quoted message if exists */}
+        {item.quoted_message_id && (
+          <div className="border-l-4 border-blue-500 pl-2 mb-1 bg-gray-700 rounded-r-lg">
+            <small className="text-gray-300">
+              <span className="text-blue-400">{item.quoted_sender}</span>:{" "}
+              {item.quoted_message && item.quoted_message.length > 100 
+                ? item.quoted_message.substring(0, 100) + "..." 
+                : item.quoted_message}
+            </small>
           </div>
         )}
+        
+        {/* Main message content */}
+        <div className="flex justify-between">
+          <div>
+            <p>
+              <strong className="text-green-400">{item.sender}: </strong>
+              {item.message}
+            </p>
+            {/* Show Message ID only if the user is an admin */}
+            {isAdmin === "true" && (
+              <p className="text-gray-400 text-sm">ID: {item.my_row_id}</p>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleQuoteMessage(item)}
+              className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+            >
+              💬
+            </button>
+            {isAdmin === "true" && (
+              <button
+                onClick={() => deleteMessage(item.my_row_id)}
+                className="rounded-lg hover:bg-red-700 px-2 py-1"
+              >
+                ❌
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     ));
   }
@@ -571,14 +736,16 @@ function Messages() {
 
 
   //Processing invite accept/deny
-  const CHANGEME = 'placeholdervalue';
+  
   const processInvite = async (e) => {
-    e.preventDefault();
-    
+    //e.preventDefault();
+    const owner = currentInvite.owner;
+    const invitee = currentInvite.invitee;
+    const channel = currentInvite.channel;
     const response = await fetch("http://localhost:5001/processInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ CHANGEME }),
+      body: JSON.stringify({ acceptOrDeny, owner, invitee, channel}),
     });
     
     const data = await response.json();
@@ -600,18 +767,18 @@ function Messages() {
   };
 
   //Sending invite
-  const CHANGEME2 = 'placeholdervalue';
   const sendInvite = async (e) => {
     e.preventDefault();
     
     const response = await fetch("http://localhost:5001/sendInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ CHANGEME2 }),
+      body: JSON.stringify({ invitedUser, loggedInUser, currentChannel }),
     });
     
     const data = await response.json();
     if (response.ok) {
+      setShowInviteModal(false)
       toast.success(data.message, {
         position: "top-center",
         autoClose: 2000,
@@ -624,9 +791,67 @@ function Messages() {
         transition: Flip,
         });        
     } else {
-      alert(data.message);
+      toast.error(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });
     }
   };
+
+  //Sending request
+  const sendRequest = async (e) => {
+    e.preventDefault();
+    const owner = getChannelOwner(channelName)
+    const response = await fetch("http://localhost:5001/sendRequest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ owner, loggedInUser, channelName }),
+    });
+    
+    const data = await response.json();
+    if (response.ok) {
+      setShowJoinModal(false)
+      toast.success(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });        
+    } else {
+      toast.error(data.message, {
+        position: "top-center",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        transition: Flip,
+        });
+    }
+  };
+
+  function getChannelOwner(queryName){
+    var tempCombined = channelList.concat(userChannelList, discoverChannelList)
+    for(var i = 0; i < tempCombined.length; i++){
+      if(queryName==tempCombined[i].channel_name){
+        return tempCombined[i].creator;
+      }
+    }
+  }
 
     const onEmojiClick = (emojiData) => {
     setMessageToSend((prev) => prev + emojiData.emoji);
@@ -669,13 +894,40 @@ buttons.forEach((btn) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
-
-
           </div>
-          <button onClick={() => { localStorage.removeItem("loggedInUser"); navigate("/home"); }}
-            className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">
-            Logout
-          </button>
+          <button
+          onClick={async () => {
+            try {
+              // Notify the server to update status to "offline"
+              const response = await fetch("http://localhost:5001/updateStatus", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: loggedInUser, status: "offline" }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to update status");
+              }
+
+              // Close the socket connection
+              if (socket) {
+                socket.disconnect();
+              }
+
+              // Remove loggedInUser from localStorage
+              localStorage.removeItem("loggedInUser");
+
+              // Navigate to the home page
+              navigate("/home");
+            } catch (err) {
+              console.error("Error updating status on logout:", err);
+              alert("Failed to update status. Please try again.");
+            }
+          }}
+          className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
+        >
+          Logout
+        </button>
         </div>
         <div>
 
@@ -690,7 +942,7 @@ buttons.forEach((btn) => {
             {(isAdmin === "true"  && showChannelList ) && (
               <div className="flex justify-between mb-4">
                 <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
-                <button onClick={() => setShowDeleteModal(true)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
+                <button onClick={deleteChannel} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
             <hr className="border-t-4 border-white-600 mb-2"></hr> 
@@ -705,21 +957,22 @@ buttons.forEach((btn) => {
                 <h2 className="text-xl font-semibold">Your Channels</h2>
                 <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
               </div>
-              
             </div>
+            <ul className="space-y-2 mb-4">{listOutChannels(userChannelList)}</ul>
             <hr className="border-t-4 border-white-600 mb-2"></hr>
             <div className="flex justify-between items-center mb-4">
             <h8 className="flex justify-between text-xl font-semibold mb-4">Discover</h8>
             <button onClick={() => setShowJoinModal(true)} className="flex justify-between  mb-4">Join 
             </button>
             </div>
+            <ul className="space-y-2 mb-4">{listOutDiscover(discoverChannelList)}</ul>
             </>) }
-            {showMessageList && <ul className="space-y-2 mb-4">{listOutChannels(privateMessageList)}</ul>}
+            {showMessageList && <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>}
 
         
           </div>
 
-          <div className="w-3/4 p-4">
+          <div className="w-2/4 p-4">
           
           <h2 className="flex justify-between mb-4">
             <h3 className = " font-semibold text-xl ">Messages</h3>
@@ -729,6 +982,7 @@ buttons.forEach((btn) => {
           
           {(isAdmin === "true" && showButtonsAdmin) && (
   <>
+
             <button
       onClick={() => setShowAssignUser(true)}
       className="scale-60 text-white rounded-lg transition duration-200 ml-20 transform hover:scale-80"
@@ -766,6 +1020,13 @@ buttons.forEach((btn) => {
 <button onClick={ () => setShowButtonsAdmin(prev=>!prev)} test-userid = "ellipsis" className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
 </h2>
           
+          {/* clicking the remove users button should bring up a list of the users in the channel for the admin to select*/}
+          {isAdmin=="true" &&
+          <button onClick={() =>setShowRemoveUser(true)} className="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">Remove User</button>}
+          
+          <button onClick={() => setShowInviteModal(true)} className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105">send invite button</button>
+          
+
           <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
@@ -773,45 +1034,80 @@ buttons.forEach((btn) => {
           </div>
           </div>
           
-          <div className="mt-2 flex items-center">
-
-          <div className="relative">
-            <button onClick={() => setShowEmojiPicker((prev) => !prev)} className="bg-gray-700 border border-gray-600 p-3 mr-2 rounded-lg">
-              😀
-            </button>
-
-            {showEmojiPicker && (
-              <div className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50">
-                <Picker onEmojiClick={onEmojiClick} />
+          <div className="mt-2 flex flex-col">
+            {/* Quote Preview */}
+            {quotedMessage && (
+              <div className="mb-2 p-2 bg-gray-700 border-l-4 border-blue-500 rounded flex justify-between items-center">
+                <div className="flex-1">
+                  <span className="text-sm">
+                    Replying to <strong className="text-blue-400">{quotedMessage.sender}</strong>:{" "}
+                    <span className="text-gray-300">
+                      {quotedMessage.message.length > 100
+                        ? quotedMessage.message.substring(0, 100) + "..."
+                        : quotedMessage.message}
+                    </span>
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setQuotedMessage(null)} 
+                  className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  ✕
+                </button>
               </div>
             )}
-          </div>
-
-          <input
+            
+            {/* Message Input Area */}
+            <div className="flex items-center">
+              <div className="relative">
+                <button
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  className="bg-gray-700 border border-gray-600 p-3 mr-2 rounded-lg"
+                >
+                  😀
+                </button>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-full left-0 mb-2 bg-gray-800 rounded-lg shadow-lg z-50">
+                    <Picker onEmojiClick={onEmojiClick} />
+                  </div>
+                )}
+              </div>
+              <input
                 type="text"
                 value={messageToSend}
                 onChange={(e) => setMessageToSend(e.target.value)}
-                onKeyDown={handleKeyDown} // Add this line
-              placeholder="Type a message..."
-              className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
-            />
-         
-          <button id="messageField" className="bg-gray-500 w-1/6 py-3 rounded-lg" onClick={sendMessage}>
-            Send
-          </button>
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message..."
+                className="w-5/6 p-3 rounded-lg bg-gray-700 text-white placeholder-gray-500 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 mr-2"
+              />
+              <button
+                id="messageField"
+                className="bg-gray-500 w-1/6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+                onClick={sendMessage}
+              >
+                Send
+              </button>
+            </div>
           </div>
 
           </div>
-          <div className= "mt-5">
-          Sent requests
-          <ul className="space-y-2 mb-4">{listOutSentRequests(sentRequestList)}</ul>
-          Received requests
-          <ul className="space-y-2 mb-4">{listOutReceivedRequests(receivedRequestList)}</ul>
-          Sent invites
-          <ul className="space-y-2 mb-4">{listOutSentInvites(sentInviteList)}</ul>
-          Received invites
-          <ul className="space-y-2 mb-4">{listOutReceivedInvites(receivedInviteList)}</ul>
-
+          <div className="w-1/4 pt-4 pr-4">
+          <div className="bg-gray-700 rounded-lg">
+          <text className="p-2 flex text-xl font-semibold">Sent requests</text>
+          <ul className="space-y-2 py-2 px-2 mb-4">{listOutSentRequests(sentRequestList)}</ul>
+          </div>
+          <div className="bg-gray-700 rounded-lg">
+          <text className="p-2 flex text-xl font-semibold">Received requests</text>
+          <ul className="space-y-2 py-2 px-2 mb-4">{listOutReceivedRequests(receivedRequestList)}</ul>
+          </div>
+          <div className="bg-gray-700 rounded-lg">
+          <text className="p-2 flex text-xl font-semibold">Sent invites</text>
+          <ul className="space-y-2 py-2 px-2 mb-4">{listOutSentInvites(sentInviteList)}</ul>
+          </div>
+          <div className="bg-gray-700 rounded-lg">
+          <text className="p-2 flex text-xl font-semibold">Received invites</text>
+          <ul className="space-y-2 py-2 px-2 mb-4">{listOutReceivedInvites(receivedInviteList)}</ul>
+          </div>
           </div>
         </div>
         
@@ -836,8 +1132,21 @@ buttons.forEach((btn) => {
             <h2 className="text-xl mb-4">Enter Channel to Join</h2>
             <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
             <div className="mt-4 flex justify-between">
-              <button onClick={joinChannel} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={sendRequest} className="bg-green-600 px-4 py-2 rounded-lg">Request to join</button>
               <button onClick={() => setShowJoinModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInviteModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl mb-4">Enter User to Invite</h2>
+            <input type="text" value={invitedUser} onChange={(e) => setInvitedUser(e.target.value)} className="p-2 rounded-lg bg-gray-700 text-white border border-gray-600" />
+            <div className="mt-4 flex justify-between">
+              <button onClick={sendInvite} className="bg-green-600 px-4 py-2 rounded-lg">Join</button>
+              <button onClick={() => setShowInviteModal(false)} className="bg-red-600 px-4 py-2 rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
