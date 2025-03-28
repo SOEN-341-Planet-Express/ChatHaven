@@ -58,8 +58,11 @@ function Messages() {
 
   const [quotedMessage, setQuotedMessage] = useState(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({block: "end"});
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: smooth ? "smooth" : "instant", 
+      block: "nearest",
+    });
   };
 
   useEffect(() => {
@@ -1072,7 +1075,7 @@ buttons.forEach((btn) => {
           
 
           <div className="space-y-4">
-          <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] overflow-y-auto">
+          <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] max-h-[30rem] overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           <div ref={messagesEndRef} /> {                      }
           </div>
