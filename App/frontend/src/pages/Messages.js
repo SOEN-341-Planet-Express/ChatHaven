@@ -526,7 +526,7 @@ function Messages() {
     const response = await fetch("http://localhost:5001/loadMessages", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentChannel, currentChannelType }),
+      body: JSON.stringify({ currentChannel, currentChannelType, loggedInUser }),
     })
     
     const data = await response.json()
@@ -991,6 +991,7 @@ buttons.forEach((btn) => {
               </div>
             )}
             <hr className="border-t-4 border-white-600 mb-2"></hr> 
+            
             {showChannelList && (<>
             <h7 className="flex justify-between text-xl font-semibold mb-4">Public Channels </h7>
             
@@ -1012,7 +1013,9 @@ buttons.forEach((btn) => {
             </div>
             <ul className="space-y-2 mb-4">{listOutDiscover(discoverChannelList)}</ul>
             </>) }
-            {showMessageList && <ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>}
+            
+            {showMessageList && (<ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>)}
+            
 
         
           </div>
