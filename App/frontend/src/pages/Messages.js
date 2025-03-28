@@ -128,69 +128,7 @@ function Messages() {
       }
     }
 
-    //Load requests sent to channel creator
-    async function getSentRequests() {
-      const response = await fetch("http://localhost:5001/getSentRequests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSentRequestList(data.message);
-      } else {
-        alert(data.message);
-      }
-    }
-
-    //Load pending requests to your channels
-    async function getReceivedRequests() {
-      const response = await fetch("http://localhost:5001/getReceivedRequests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setReceivedRequestList(data.message);
-      } else {
-        alert(data.message);
-      }
-    }
-
-    //Load invites sent to users
-    async function getSentInvites() {
-      const response = await fetch("http://localhost:5001/getSentInvites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSentInviteList(data.message);
-      } else {
-        alert(data.message);
-      }
-    }
-
-    //Load invites received from channel creators
-    async function getReceivedInvites() {
-      const response = await fetch("http://localhost:5001/getReceivedInvites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setReceivedInviteList(data.message);
-      } else {
-        alert(data.message);
-      }
-    }
+    
 
     if(currentChannel || currentChannelType){
       loadMessages()
@@ -202,10 +140,7 @@ function Messages() {
       checkIsCreator()
     }
 
-    getReceivedInvites();
-    getSentInvites();
-    getReceivedRequests();
-    getSentRequests();
+    
     getDms();
     checkAdmin();
     getChannels();
@@ -237,6 +172,116 @@ function Messages() {
     });
     return () => socket.off("receiveMessage");
   }, [socket, currentChannel, currentChannelType, loggedInUser]);
+
+   // Listen for incoming invite via WebSocket
+   useEffect(() => {
+    if (!socket) return;
+    socket.on("receiveInvite", (data) => {
+      
+        // For DMs, check both directions.
+        if(data.invitee === loggedInUser){
+          setReceivedInviteList((prev) => [...prev, data]);
+        } else if (data.owner === loggedInUser) {
+        // For group chats, a simple match is sufficient.
+        setSentInviteList((prev) => [...prev, data]);
+        }
+    });
+    return () => socket.off("receiveInvite");
+  }, [socket, loggedInUser]);
+
+  // Listen for incoming request via WebSocket
+   useEffect(() => {
+    if (!socket) return;
+    socket.on("receiveRequest", (data) => {
+      
+        // For DMs, check both directions.
+        if(data.invitee === loggedInUser){
+          setSentRequestList((prev) => [...prev, data]);
+        } else if (data.owner === loggedInUser) {
+        // For group chats, a simple match is sufficient.
+        setReceivedRequestList((prev) => [...prev, data]);
+        }
+    });
+    return () => socket.off("receiveRequest");
+  }, [socket, loggedInUser]);
+
+
+  useEffect(() => {
+
+    //Load requests sent to channel creator
+    async function getSentRequests() {
+      const response = await fetch("http://localhost:5001/getSentRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loggedInUser }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSentRequestList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load pending requests to your channels
+    async function getReceivedRequests() {
+      const response = await fetch("http://localhost:5001/getReceivedRequests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loggedInUser }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setReceivedRequestList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load invites sent to users
+    async function getSentInvites() {
+      const response = await fetch("http://localhost:5001/getSentInvites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loggedInUser }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSentInviteList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    //Load invites received from channel creators
+    async function getReceivedInvites() {
+      const response = await fetch("http://localhost:5001/getReceivedInvites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ loggedInUser }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setReceivedInviteList(data.message);
+      } else {
+        alert(data.message);
+      }
+    }
+
+    if (!socket) return;
+    socket.on("receiveProcess", (data) => {
+      
+      getReceivedInvites();
+      getSentInvites();
+      getReceivedRequests();
+      getSentRequests();
+    });
+    return () => socket.off("receiveProcess");
+  }, [socket, loggedInUser]);
 
   // Listen for deleteMessage event from the server
   useEffect(() => {
@@ -654,7 +699,7 @@ function Messages() {
       <li key={index} className="bg-gray-600 pl-4 pt-2 pb-2 rounded-lg cursor-pointer transition duration-200">
           <p>Requested user: <text className="text-green-400">{item.owner}</text></p>
           <p className="pb-2">For channel: <text className="text-yellow-400">{item.channel} </text></p>
-          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("deny") ; setCurrentInvite(item);}}>Cancel</button> 
+          <button className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-2 rounded-lg transition duration-200 transform hover:scale-105" onClick={()=>{setAcceptOrDeny("deny"); setCurrentInvite(item);}}>Cancel</button> 
       </li>
     ));
   }
@@ -790,7 +835,14 @@ function Messages() {
     const owner = currentInvite.owner;
     const invitee = currentInvite.invitee;
     const channel = currentInvite.channel;
-    const response = await fetch("http://localhost:5001/processInvite", {
+
+    socket.emit("processInvite", {
+      acceptOrDeny,
+      owner,
+      invitee,
+      channel,
+    });
+    /*const response = await fetch("http://localhost:5001/processInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ acceptOrDeny, owner, invitee, channel}),
@@ -811,14 +863,19 @@ function Messages() {
         });        
     } else {
       alert(data.message);
-    }
+    }*/
   };
 
   //Sending invite
   const sendInvite = async (e) => {
     e.preventDefault();
-    
-    const response = await fetch("http://localhost:5001/sendInvite", {
+    setShowInviteModal(false)
+    socket.emit("sendInvite", {
+      invitedUser,
+      loggedInUser,
+      currentChannel,
+    });
+    /*const response = await fetch("http://localhost:5001/sendInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ invitedUser, loggedInUser, currentChannel }),
@@ -850,13 +907,20 @@ function Messages() {
         theme: "dark",
         transition: Flip,
         });
-    }
+    }*/
   };
 
   //Sending request
   const sendRequest = async (e) => {
     e.preventDefault();
     const owner = getChannelOwner(channelName)
+    setShowJoinModal(false)
+    socket.emit("sendRequest", {
+      owner,
+      loggedInUser,
+      channelName,
+    });
+    /*
     const response = await fetch("http://localhost:5001/sendRequest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -889,7 +953,7 @@ function Messages() {
         theme: "dark",
         transition: Flip,
         });
-    }
+    }*/
   };
 
   function getChannelOwner(queryName){
