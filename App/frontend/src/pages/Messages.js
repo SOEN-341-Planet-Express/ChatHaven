@@ -235,6 +235,38 @@ function Messages() {
     return () => socket.off("receiveMessage");
   }, [socket, currentChannel, currentChannelType, loggedInUser]);
 
+   // Listen for incoming invite via WebSocket
+   useEffect(() => {
+    if (!socket) return;
+    socket.on("receiveInvite", (data) => {
+      
+        // For DMs, check both directions.
+        if(data.invitee === loggedInUser){
+          setReceivedInviteList((prev) => [...prev, data]);
+        } else if (data.owner === loggedInUser) {
+        // For group chats, a simple match is sufficient.
+        setSentInviteList((prev) => [...prev, data]);
+        }
+    });
+    return () => socket.off("receiveInvite");
+  }, [socket, loggedInUser]);
+
+  // Listen for incoming request via WebSocket
+   useEffect(() => {
+    if (!socket) return;
+    socket.on("receiveRequest", (data) => {
+      
+        // For DMs, check both directions.
+        if(data.invitee === loggedInUser){
+          setSentRequestList((prev) => [...prev, data]);
+        } else if (data.owner === loggedInUser) {
+        // For group chats, a simple match is sufficient.
+        setReceivedRequestList((prev) => [...prev, data]);
+        }
+    });
+    return () => socket.off("receiveRequest");
+  }, [socket, loggedInUser]);
+
   // Listen for deleteMessage event from the server
   useEffect(() => {
     if (!socket) return;
@@ -814,8 +846,13 @@ function Messages() {
   //Sending invite
   const sendInvite = async (e) => {
     e.preventDefault();
-    
-    const response = await fetch("http://localhost:5001/sendInvite", {
+    setShowInviteModal(false)
+    socket.emit("sendInvite", {
+      invitedUser,
+      loggedInUser,
+      currentChannel,
+    });
+    /*const response = await fetch("http://localhost:5001/sendInvite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ invitedUser, loggedInUser, currentChannel }),
@@ -847,13 +884,20 @@ function Messages() {
         theme: "dark",
         transition: Flip,
         });
-    }
+    }*/
   };
 
   //Sending request
   const sendRequest = async (e) => {
     e.preventDefault();
     const owner = getChannelOwner(channelName)
+    setShowJoinModal(false)
+    socket.emit("sendRequest", {
+      owner,
+      loggedInUser,
+      channelName,
+    });
+    /*
     const response = await fetch("http://localhost:5001/sendRequest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -886,7 +930,7 @@ function Messages() {
         theme: "dark",
         transition: Flip,
         });
-    }
+    }*/
   };
 
   function getChannelOwner(queryName){
