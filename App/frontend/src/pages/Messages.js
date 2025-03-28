@@ -1069,13 +1069,13 @@ buttons.forEach((btn) => {
 
  </>
 )}
-<button onClick={ () => setShowButtonsAdmin(prev=>!prev)} test-userid = "ellipsis" className=" text-xl transition-500 hover:text-xxl font-semibold">⁝</button>
+<button onClick={ () => setShowButtonsAdmin(prev=>!prev)} test-userid = "ellipsis" className=" text-xl p-0 m-0 h-auto w-auto transition-500 hover:text-xxl font-semibold">⁝</button>
 </h2>
           
           
 
           <div className="space-y-4">
-          <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] max-h-[30rem] overflow-y-auto">
+          <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] max-h-[35rem] overflow-y-auto">
           <div className="space-y-4">{listOutMessages(messageList)}</div>
           <div ref={messagesEndRef} /> {                      }
           </div>
