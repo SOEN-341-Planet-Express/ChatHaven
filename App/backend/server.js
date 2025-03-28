@@ -131,11 +131,11 @@ io.on("connection", (socket) => {
 socket.on("sendInvite", (data) => {
   const { invitedUser, loggedInUser, currentChannel } = data;
   if(invitedUser == loggedInUser){
-    return res.status(400).json({ message: "Cannot invite yourself" });
+    //return res.status(400).json({ message: "Cannot invite yourself" });
   } else if(invitedUser == ""){
-    return res.status(400).json({ message: "Must enter a user to invite" });
+    //return res.status(400).json({ message: "Must enter a user to invite" });
   } else if(currentChannel==""){
-    return res.status(400).json({ message: "Must select a channel first" });
+    //return res.status(400).json({ message: "Must select a channel first" });
   }
 
   const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
@@ -200,6 +200,25 @@ socket.on("sendRequest", (data) => {
   });
 });
 
+socket.on("processInvite", (data) => {
+  const { acceptOrDeny, owner, invitee, channel } = data;
+  const mysql = "DELETE FROM channel_invites WHERE invitee = (?) AND owner = (?) and channel = (?)";
+  db.query(mysql, [invitee, owner, channel], (err, results) => {
+  });
+
+  if(acceptOrDeny == 'accept'){
+    const mysql2 = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
+  db.query(mysql2, [channel, invitee], (err, results) => {
+    io.emit("receiveProcess", {
+      status: "accepted", 
+    });
+  });
+  } else {
+    io.emit("receiveProcess", {
+      status: "denied", 
+    });
+  }
+});
 
 });
 // --------------------- REST Endpoints --------------------- //
@@ -643,7 +662,7 @@ app.post("/forgotpassword", (req, res) => {
 
 
 //Process invite
-app.post("/processInvite", (req, res) => {
+/*app.post("/processInvite", (req, res) => {
   const { acceptOrDeny, owner, invitee, channel } = req.body;
   
 
@@ -659,7 +678,7 @@ app.post("/processInvite", (req, res) => {
   } else {
     res.status(200).json({ message: "Invite Denied"})
   }
-});
+});*/
 
 //Send invite
 /*app.post("/sendInvite", (req, res) => {
