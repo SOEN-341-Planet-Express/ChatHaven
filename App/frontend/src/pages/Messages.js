@@ -987,7 +987,7 @@ buttons.forEach((btn) => {
             {(isAdmin === "true"  && showChannelList ) && (
               <div className="flex justify-between mb-4">
                 <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
-                <button onClick={deleteChannel} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
+                <button onClick={deleteChannel} data-testid = "New-Delete-Channel" className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
             <hr className="border-t-4 border-white-600 mb-2"></hr> 
