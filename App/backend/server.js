@@ -12,6 +12,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.use("/uploads", express.static("uploads"));
 
 // Create an HTTP server and initialize Socket.io
 const server = http.createServer(app);
@@ -21,6 +22,15 @@ const io = new Server(server, {
   },
 });
 
+//file upload
+const multer = require("multer");
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+const upload = multer({ storage });
 
 // Connection
 const db = mysql.createConnection({
@@ -38,6 +48,34 @@ db.connect(err => {
   console.log("Connected");
 });
 
+
+// Create listing 
+app.post("/listings", upload.single("image"), (req, res) => {
+  const title = req.body.title;
+  const description = req.body.description;
+  const price = req.body.price;
+  const image = req.file.filename;
+
+  const sql = "INSERT INTO listings (title, description, price, image, created_at) VALUES (?, ?, ?, ?, NOW())";
+  db.query(sql, [title, description, price, image], (err, result) => {
+    if (err) {
+      res.status(500).json({ message: "DB error" });
+    } else {
+      res.status(201).json({ message: "Created" });
+    }
+  });
+});
+
+app.get("/listings", (req, res) => {
+  const sql = "SELECT * FROM listings ORDER BY created_at DESC"; //newest first
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error getting listing", err);
+      return res.status(500).json({ message: "DB error" });
+    }
+    res.status(200).json(results);
+  });
+});
 
 // WebSocket Connection Handling
 io.on("connection", (socket) => {

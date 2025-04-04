@@ -3,6 +3,8 @@ import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Messages from "./pages/Messages";
 import ForgotPassword from "./pages/ForgotPassword";
+import CreateListing from "./pages/CreateListing" ;
+import Listings from "./pages/Listings";
 
 //Toastify imports for notifications
 import { ToastContainer, toast, Flip } from 'react-toastify';
@@ -17,6 +19,8 @@ function App() {
         <Route path="/Signup" element={<Signup />} />
         <Route path="/Messages" element={<Messages />} />
         <Route path = "/ForgotPassword" element={<ForgotPassword />} />
+        <Route path="/Createlisting" element={<CreateListing />} />
+        <Route path="/listings" element={<Listings />} />
       </Routes>
 
       <ToastContainer
