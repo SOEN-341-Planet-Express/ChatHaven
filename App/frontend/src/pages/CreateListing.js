@@ -135,7 +135,7 @@ function CreateListing() {
         </form>
 
         <div className="mt-6 text-center">
-          <button onClick={() => navigate("/Marketplace")} className="text-gray-400 hover:text-white transition duration-200">
+          <button onClick={() => navigate("/listings")} className="text-gray-400 hover:text-white transition duration-200">
             Back to Marketplace
           </button>
         </div>
