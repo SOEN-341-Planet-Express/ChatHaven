@@ -988,6 +988,23 @@ buttons.forEach((btn) => {
   });
 });
 
+const unselectColor = 'clear'; 
+const selectColor = 'bg-gray-700'; 
+const buttons2 = document.querySelectorAll('.chan');
+
+buttons2.forEach((chan) => {
+  chan.addEventListener('click', () => {
+    // Rest all button colors
+    buttons2.forEach((b) => {
+      b.classList.add(unselectColor);
+      b.classList.remove(selectColor);
+    });
+    // Add active color on the clicked button, remove default color
+    chan.classList.remove(unselectColor);
+    chan.classList.add(selectColor);
+  });
+});
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
       <div className="container mx-auto px-4 py-8">
@@ -1047,41 +1064,41 @@ buttons.forEach((btn) => {
         </div>
         <div className="flex bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="w-1/4 bg-gray-700 p-4 flex flex-col h-full">
-            <div className="flex gap-5 -mt-3 items-start">
-              <button onClick={() => {setShowMessageList(false) ; setShowChannelList(true);}}className="scale-125 bg-black-400 hover:bg-grey-100 text-white font-semibold py-4 px-4 rounded-lg transition duration-200 transform hover:scale-140">Channels</button>
-              <button onClick={() => {setShowChannelList(false) ; setShowMessageList(true);}}className="scale-125 bg-black-400 hover:bg-grey-100 text-white font-semibold py-4 px-4 rounded-lg transition duration-200 transform hover:scale-140">Private</button>
+            <div className="flex bg-gray-800 gap-5 -mt-4 items-start -mr-4 -ml-4 pl-3">
+              <button onClick={() => {setShowMessageList(false) ; setShowChannelList(true);}} className="chan -ml-4 text-xl rounded-t-lg bg-gray-700 hover:bg-gray-700 text-white font-semibold py-3 px-5 transition duration-200 transform">Channels</button>
+              <button onClick={() => {setShowChannelList(false) ; setShowMessageList(true);}} className="chan -ml-5 text-xl rounded-t-lg bg-black-400 hover:bg-gray-700 text-white font-semibold py-3 px-5 transition duration-200 transform">Private</button>
             </div>
             {(isAdmin === "true"  && showChannelList ) && (
-              <div className="flex justify-between mb-4">
+              <div className="flex justify-between pt-4">
                 <button onClick={() => setShowCreateModal(true)} className="bg-green-600   hover:bg-green-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Create</button>
                 <button onClick={deleteChannel} data-testid = "New-Delete-Channel" className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-lg transition duration-200 transform hover:scale-105">Delete</button>
               </div>
             )}
-            <hr className="border-t-4 border-white-600 mb-2"></hr> 
+             
             
             {showChannelList && (<>
-            <h7 className="flex justify-between text-xl font-semibold mb-4">Public Channels </h7>
+            <h7 className="flex justify-between text-xl font-semibold mb-4 pt-4">Public Channels </h7>
             
             
             <ul className="space-y-2 mb-4">{listOutChannels(channelList)}</ul>
-            <hr className="border-t-4 border-white-600 mb-2"></hr> 
+            
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-semibold">Your Channels</h2>
-                <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-135">✚</button>
+                <button onClick={() => setShowCreatePrivateModal(true)} className="scale-115 hover:scale-125">✚</button>
               </div>
             </div>
             <ul className="space-y-2 mb-4">{listOutChannels(userChannelList)}</ul>
-            <hr className="border-t-4 border-white-600 mb-2"></hr>
+            
             <div className="flex justify-between items-center mb-4">
             <h8 className="flex justify-between text-xl font-semibold mb-4">Discover</h8>
-            <button onClick={() => setShowJoinModal(true)} className="flex justify-between  mb-4">Join 
+            <button onClick={() => setShowJoinModal(true)} className="flex justify-between hover:scale-105 mb-4">Join 
             </button>
             </div>
             <ul className="space-y-2 mb-4">{listOutDiscover(discoverChannelList)}</ul>
             </>) }
             
-            {showMessageList && (<ul className="space-y-2 mb-4">{listOutDMs(privateMessageList)}</ul>)}
+            {showMessageList && (<ul className="space-y-2 mb-4 pt-5">{listOutDMs(privateMessageList)}</ul>)}
             
 
         
