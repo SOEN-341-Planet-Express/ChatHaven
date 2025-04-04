@@ -8,9 +8,10 @@ function CreateListing() {
   const [price, setPrice] = useState("")
   const [image, setImage] = useState(null) 
   const navigate = useNavigate()
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const user = localStorage.getItem("loggedInUser");
 
     if (!title || !description || !price || !image) {
       toast.error("Please enter all fields", {
@@ -27,6 +28,8 @@ function CreateListing() {
     formData.append("description", description)
     formData.append("price", price)
     formData.append("image", image)
+    formData.append("author", user);
+    
 
     try {
       const response = await fetch("http://localhost:5001/listings", {
@@ -41,7 +44,7 @@ function CreateListing() {
           theme: "dark",
           transition: Flip,
         })
-        navigate("/Marketplace")
+        navigate("/Listings")
       } else {
         const data = await response.json()
         toast.error(data.message || "Something went wrong", {

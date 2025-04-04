@@ -1023,7 +1023,25 @@ buttons2.forEach((chan) => {
               />
             </svg>
             <h1 className="text-3xl font-bold">ChatHaven</h1>
+            <div className="mt-6 text-center">
+              
+        </div>
           </div>
+          <div className="flex items-center gap-4">
+          <div>
+              <div><button
+            onClick={() => navigate("/Listings")}
+            className="text-gray-700 hover:text-white transition duration-200 mr-20"
+          >
+               🄼🄰🅁🄺🄴🅃🄿🄻🄰🄲🄴
+          </button></div>
+          <button
+            onClick={() => navigate("/Listings")}
+            className="text-gray-700 hover:text-white transition duration-200"
+          >
+               🄼🄰🅁🄺🄴🅃🄿🄻🄰🄲🄴
+          </button>
+        </div>
           <button
           onClick={async () => {
             try {
@@ -1058,6 +1076,8 @@ buttons2.forEach((chan) => {
           Logout
         </button>
         </div>
+        </div>
+        
         <div>
 
         <h1 className = "text-l font-semibold py-2 px-4 font-size-30 ">Welcome {loggedInUser}</h1>
