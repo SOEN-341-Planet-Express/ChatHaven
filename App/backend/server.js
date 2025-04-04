@@ -55,9 +55,10 @@ app.post("/listings", upload.single("image"), (req, res) => {
   const description = req.body.description;
   const price = req.body.price;
   const image = req.file.filename;
+  const author = req.body.author;
 
-  const sql = "INSERT INTO listings (title, description, price, image, created_at) VALUES (?, ?, ?, ?, NOW())";
-  db.query(sql, [title, description, price, image], (err, result) => {
+  const sql = "INSERT INTO listings (title, description, price, image, author, created_at) VALUES (?, ?, ?, ?, ?, NOW())";
+  db.query(sql, [title, description, price, image, author], (err, result) => {
     if (err) {
       res.status(500).json({ message: "DB error" });
     } else {
@@ -74,6 +75,29 @@ app.get("/listings", (req, res) => {
       return res.status(500).json({ message: "DB error" });
     }
     res.status(200).json(results);
+  });
+});
+
+app.put("/listings/:id/toggle-status", (req, res) => {
+  const listingId = req.params.id;
+
+  const getStatusSQL = "SELECT status FROM listings WHERE id = ?";
+  db.query(getStatusSQL, [listingId], (err, results) => {
+    if (err || results.length === 0) {
+      return res.status(500).json({ message: "Error reading status" });
+    }
+
+    const currentStatus = results[0].status;
+    const newStatus = currentStatus === "sold" ? "to sell" : "sold";
+
+    const updateSQL = "UPDATE listings SET status = ? WHERE id = ?";
+    db.query(updateSQL, [newStatus, listingId], (updateErr) => {
+      if (updateErr) {
+        return res.status(500).json({ message: "Error updating status" });
+      }
+
+      res.status(200).json({ message: "Status updated", newStatus });
+    });
   });
 });
 
