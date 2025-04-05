@@ -78,6 +78,20 @@ app.get("/listings", (req, res) => {
   });
 });
 
+app.delete("/listings/:id", (req, res) => {
+  const listingId = req.params.id;
+
+  const sql = "DELETE FROM listings WHERE id = ?";
+  db.query(sql, [listingId], (err, result) => {
+    if (err) {
+      console.error("Error deleting listing:", err);
+      return res.status(500).json({ message: "DB error" });
+    }
+
+    res.status(200).json({ message: "Listing deleted" });
+  });
+});
+
 app.put("/listings/:id/toggle-status", (req, res) => {
   const listingId = req.params.id;
 
