@@ -473,10 +473,7 @@ function Messages() {
 
 
   
-  const createPrivateChannel = async (e) => {
-    e.preventDefault();
-    if (!channelName) return alert("Please enter a channel name.");
-  };
+  
   const assignUsers = async (e) => {
     e.preventDefault()
     const response = await fetch("http://localhost:5001/assignUsers", {
@@ -959,7 +956,7 @@ function Messages() {
   function getChannelOwner(queryName){
     var tempCombined = channelList.concat(userChannelList, discoverChannelList)
     for(var i = 0; i < tempCombined.length; i++){
-      if(queryName==tempCombined[i].channel_name){
+      if(queryName===tempCombined[i].channel_name){
         return tempCombined[i].creator;
       }
     }
@@ -1031,16 +1028,10 @@ buttons2.forEach((chan) => {
           <div>
               <div><button
             onClick={() => navigate("/Listings")}
-            className="text-gray-700 hover:text-white transition duration-200 mr-20"
+            className="text-gray-700 hover:text-white transition duration-200 mr-6"
           >
                🄼🄰🅁🄺🄴🅃🄿🄻🄰🄲🄴
           </button></div>
-          <button
-            onClick={() => navigate("/Listings")}
-            className="text-gray-700 hover:text-white transition duration-200"
-          >
-               🄼🄰🅁🄺🄴🅃🄿🄻🄰🄲🄴
-          </button>
         </div>
           <button
           onClick={async () => {
@@ -1076,7 +1067,7 @@ buttons2.forEach((chan) => {
           Logout
         </button>
         </div>
-        </div>
+      </div>
         
         <div>
 
