@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
 
+
 function Listings() {
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);
@@ -111,6 +112,19 @@ function Listings() {
       </div>
         <p className="text-gray-400 mb-2">{listing.description}</p>
         <p className="font-bold mb-1">${listing.price}</p>
+          {listing.author !== loggedInUser && (
+          <button onClick={() =>
+            navigate("/Messages", {
+              state: {
+                dmTarget: listing.author,
+                autoMessage: `Hello, is ${listing.title} still available?`,
+              },
+            })
+          }
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-1 px-2 rounded-md transition duration-200 mt-2 mb-2"
+        >
+          Message Seller
+          </button>)}
         <p className="text-xs text-gray-500">
          {new Date(listing.created_at).toLocaleString()}
         </p>
