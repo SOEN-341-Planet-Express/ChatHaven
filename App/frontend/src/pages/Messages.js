@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import React from "react";
 import io from "socket.io-client";
 import { useEffect, useState, useRef } from "react";
@@ -8,6 +9,7 @@ import Picker from "emoji-picker-react";
 
 function Messages() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loggedInUser, setLoggedInUser] = useState("");
   const [isAdmin, setIsAdmin] = useState("");
   const [isCreator, setIsCreator] = useState("");
@@ -74,6 +76,29 @@ function Messages() {
   useEffect(() => {
     const user = localStorage.getItem("loggedInUser");
     setLoggedInUser(user);
+
+    if (location.state && location.state.dmTarget) {
+      setCurrentChannel(location.state.dmTarget);
+      setCurrentChannelType("dm");
+    
+      if (location.state.autoMessage) {
+        setTimeout(() => {
+          if (socket) {
+            socket.emit("sendMessage", {
+              messageToSend: location.state.autoMessage,
+              loggedInUser: user,
+              currentChannel: location.state.dmTarget,
+              currentChannelType: "dm",
+              quotedMessageId: null,
+            });
+          } else {
+            console.warn("Socket not ready yet for auto-message.");
+          }
+        }, 500); // Delay to let socket connect
+      }
+    
+      window.history.replaceState({}, document.title);
+    }    
 
     async function checkAdmin() {
       const response = await fetch("http://localhost:5001/checkAdmin", {
