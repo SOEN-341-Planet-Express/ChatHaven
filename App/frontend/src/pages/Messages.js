@@ -60,6 +60,21 @@ function Messages() {
 
   const [quotedMessage, setQuotedMessage] = useState(null);
 
+  //Battlejack variables
+  const [player1, setPlayer1] = useState("");
+  const [player2, setPlayer2] = useState("");
+  const [player1hand, setPlayer1hand] = useState([]);
+  const [player2hand, setPlayer2hand] = useState([]);
+  const [player1handscore, setPlayer1handscore] = useState()
+  const [player2handscore, setPlayer2handscore] = useState()
+  const [player1score, setPlayer1score] = useState()
+  const [player2score, setPlayer2score] = useState()
+  const [player1stands, setPlayer1stands] = useState("")
+  const [player2stands, setPlayer2stands] = useState("")
+  const [isGameOver, setIsGameOver] = useState("")
+  const [whoseTurn, setWhoseTurn] = useState("");
+  const [gameDeck, setGameDeck] = useState([]);
+
   const scrollToBottom = (smooth = true) => {
     messagesEndRef.current?.scrollIntoView({
       behavior: smooth ? "smooth" : "instant", 
@@ -164,6 +179,7 @@ function Messages() {
     if(isCreator){
       checkIsCreator()
     }
+    
 
     
     getDms();
@@ -182,6 +198,7 @@ function Messages() {
   useEffect(() => {
     if (!socket) return;
     socket.on("receiveMessage", (data) => {
+      
       if (currentChannelType === "dm") {
         // For DMs, check both directions.
         if (
@@ -416,7 +433,41 @@ function Messages() {
       socket.off("userStatusUpdate");
     };
   }, [socket]);
+
+  useEffect(() => {
+    if(!socket) return;
+
+    socket.on("startBattleJackClient", (data)=>{
+      if(data.player1 === loggedInUser || data.player2 === loggedInUser){
+        setPlayer1(data.player1)
+        setPlayer2(data.player2)
+        setPlayer1hand(data.player1hand)
+        setPlayer2hand(data.player2hand)
+        setGameDeck(data.gameDeck)
+        setWhoseTurn("player1")
+        setIsGameOver("false")
+        
+        var p1total = countCard(data.player1hand[0]) + countCard(data.player1hand[1]);
+        var p2total = countCard(data.player2hand[0]) + countCard(data.player2hand[1]);;
+        
+        setPlayer1handscore(p1total)
+        setPlayer2handscore(p2total)
+      }
+    });
+
+    return () => socket.off("startBattleJackClient");
+
+  }, [socket, loggedInUser])
   
+  function countCard(card){
+    if(card.charAt(card.length-1) === "J" || card.charAt(card.length-1) === "Q" || card.charAt(card.length-1) === "K" || card.charAt(card.length-1) === "0"){
+      return 10;
+    } else if (card.charAt(card.length-1) === "A"){
+      return 1;
+    } else {
+      return parseInt(card.charAt(card.length-1))
+    }
+  }
   const createChannel = async (e) => {
     e.preventDefault();
     if (!channelName) return toast.info('Please enter a channel name', {
@@ -635,13 +686,26 @@ function Messages() {
     e.preventDefault();
     if (!messageToSend.trim() || !socket) return;
     
-    socket.emit("sendMessage", {
-      messageToSend,
-      loggedInUser,
-      currentChannel,
-      currentChannelType,
-      quotedMessageId: quotedMessage ? quotedMessage.my_row_id : null,
-    });
+    if(messageToSend === "/battlejack"){
+      if(currentChannelType === "dm"){
+        socket.emit("startBattleJack", {
+          loggedInUser,
+          currentChannel,
+        })
+      } else {
+        alert("must be in dm to play battlejack")
+      }
+      
+    } else {
+      socket.emit("sendMessage", {
+        messageToSend,
+        loggedInUser,
+        currentChannel,
+        currentChannelType,
+        quotedMessageId: quotedMessage ? quotedMessage.my_row_id : null,
+      });
+    }
+    
 
     // Clear both the message input and quoted message
     setMessageToSend("");
@@ -843,12 +907,230 @@ function Messages() {
       </div>
     ));
   }
+
+  
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       sendMessage(e);
     }
   };
 
+  function displayBattleJackCards(){ return(
+    <div>
+    {((player1 === loggedInUser) && (player2 === currentChannel) && (isGameOver === "false")) && (
+      <div className="bg-green-800 rounded-t-lg p-2">
+        <div className="flex justify-center pb-2 pt-2 text-2xl">BattleJack!</div>
+        <div className="flex justify-center">Opponent's Hand:</div>
+        <div className="flex justify-center scale-50 -mt-20 -mb-20">
+          {cards(player2hand)}
+        </div>
+        <div className="flex justify-center">Your Hand:</div>
+        <div className="flex justify-center scale-50 -mt-20 -mb-20">
+          {cards(player1hand)}
+        </div>
+      </div>
+    )}
+
+    {((player2 === loggedInUser) && (player1 === currentChannel) && (isGameOver === "false")) && (
+      <div className="bg-green-800 rounded-t-lg p-2">
+        <div className="flex justify-center pb-2 pt-2 text-2xl">BattleJack!</div>
+        <div className="flex justify-center">Opponent's Hand:</div>
+      <div className="flex justify-center scale-50 -mt-20 -mb-20">
+        {cards(player1hand)}
+      </div>
+      <div className="flex justify-center">Your Hand:</div>
+      <div className="flex justify-center scale-50 -mt-20 -mb-20">
+        {cards(player2hand)}
+      </div>
+    </div>
+    )}
+
+    {((whoseTurn === "player1" && player1 == loggedInUser && player2 === currentChannel && (isGameOver === "false")) && 
+    <div className="bg-green-800 rounded-b-lg pb-4">
+  <div className="flex justify-center pt-4">It's your turn, what do you do? Current hand score is {player1handscore}</div>
+  <div className="flex justify-center pt-4">
+    <div className="px-2">
+      <button onClick={battlejackHit}className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-1 px-4 rounded-lg transition duration-200 transform hover:scale-105">Hit</button>
+    </div>
+    <div className="px-2">  
+      <button onClick={battlejackStand}className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-4 rounded-lg transition duration-200 transform hover:scale-105">Stand</button>
+    </div>
+  </div>
+  </div>)}
+  
+  {((whoseTurn === "player2" && player2 == loggedInUser && player1 === currentChannel && (isGameOver === "false")) && 
+    <div className="bg-green-800 rounded-b-lg pb-4">
+  <div className="flex justify-center pt-4">It's your turn, what do you do? Current hand score is {player2handscore}</div>
+  <div className="flex justify-center pt-4">
+    <div className="px-2">
+      <button onClick={battlejackHit} className="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-1 px-4 rounded-lg transition duration-200 transform hover:scale-105">Hit</button>
+    </div>
+    <div className="px-2">  
+      <button onClick={battlejackStand} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-4 rounded-lg transition duration-200 transform hover:scale-105">Stand</button>
+    </div>
+  </div>
+  </div>)}
+
+  {((whoseTurn !== "player1" && player1 === loggedInUser && player2 === currentChannel && (isGameOver === "false"))) && 
+    <div className="bg-green-800 rounded-b-lg pb-4">
+      <div className="flex justify-center pt-4">It's not your turn, please wait. Current hand score is {player1handscore}</div>
+    </div>
+  }
+
+{((whoseTurn !== "player2" && player2 === loggedInUser) && player1 === currentChannel && (isGameOver === "false")) && 
+    <div className="bg-green-800 rounded-b-lg pb-4">
+      <div className="flex justify-center pt-4">It's not your turn, please wait. Current hand score is {player2handscore}</div>
+    </div>
+  }
+
+  {isGameOver === "true" && 
+  <div className="bg-green-800 rounded-lg pb-40 pt-40 flex justify-center">{whoseTurn}</div>
+  }
+    </div>
+  
+)}
+
+  function cards(hand){
+    return hand.map((card) => (
+      <img className="px-2" src={process.env.PUBLIC_URL + "/deck/" + card + ".png"}/>
+    ))
+  }
+
+  //Battlejack hit
+  const battlejackHit = async (e) => {
+    
+    socket.emit("battlejackHit", {
+      whoseTurn,
+      gameDeck,
+    });
+  };
+
+  //Battlejack receive hit
+  useEffect(() => {
+    if(!socket) return;
+
+    socket.on("battlejackReceiveHit", (data)=>{
+      
+      if(player1 === loggedInUser || player2 === loggedInUser){
+        if(data.whoseTurn === "player1"){
+          setPlayer1hand((prev) => [...prev, data.newCard]);
+          var newScore = player1handscore + countCard(data.newCard)
+          checkVictory(newScore)
+          setPlayer1handscore(newScore)
+          setWhoseTurn("player2")
+          
+          
+        } else if(data.whoseTurn === "player2"){
+          setPlayer2hand((prev) => [...prev, data.newCard]);
+          var newScore = player2handscore + countCard(data.newCard)
+          checkVictory(newScore)
+          setPlayer2handscore(newScore)
+          setWhoseTurn("player1")
+          
+          
+        }
+        setGameDeck(data.deck)
+      }
+    });
+
+
+    if(whoseTurn){
+      displayBattleJackCards();
+    }
+
+    return () => socket.off("battlejackReceiveHit");
+    
+  }, [socket, loggedInUser, whoseTurn])
+
+
+//Battlejack stand
+  const battlejackStand = async (e) => {
+    socket.emit("battlejackStand", {
+    });
+  };
+
+  //Battlejack receive stand
+  useEffect(() => {
+    if(!socket) return;
+
+    socket.on("battlejackReceiveStand", (data)=>{
+      
+      if(whoseTurn === "player1"){
+        if(player2stands === "true"){
+          //endgame
+        } else {
+          setPlayer1stands("true")
+          setWhoseTurn("player2")
+        }
+      } else if(whoseTurn === "player2"){
+        if(player1stands === "true"){
+          //endgame
+        } else {
+          setPlayer2stands("true")
+          setWhoseTurn("player1")
+        }
+        
+      }
+
+    });
+
+
+    if(whoseTurn){
+      displayBattleJackCards();
+    }
+
+    return () => socket.off("battlejackReceiveStand");
+    
+  }, [socket, whoseTurn])
+
+function checkVictory(playerScore){
+  if(player1stands === "true" && player2stands === "true"){
+    setWhoseTurn("gameover")
+    if(player1handscore > player2handscore){
+      socket.emit("gameOver", {
+        victor: player1
+      })
+    } else if (player1handscore < player2handscore){
+      socket.emit("gameOver", {
+        victor: player2
+      })
+    } else if (player1handscore == player2handscore){
+      socket.emit("gameOver", {
+        victor: "tie"
+      })
+    }
+  }
+  if(playerScore == 21){
+    socket.emit("gameOver", {
+      victor: whoseTurn
+    })
+  } else if ( playerScore > 21) {
+    if(whoseTurn === "player1"){
+      socket.emit("gameOver", {
+        victor: player2
+      })
+    } else if(whoseTurn === "player2"){
+      socket.emit("gameOver", {
+        victor: player1
+      })
+    }
+  } else {
+    
+  }
+}
+
+//Battlejack receive game over
+useEffect(() => {
+  if(!socket) return;
+
+  socket.on("receiveGameOver", (data)=>{
+    setWhoseTurn(data.message)
+    setIsGameOver("true")
+  });
+
+  return () => socket.off("receiveGameOver");
+  
+}, [socket, whoseTurn])
 
   //Processing invite accept/deny
   
@@ -864,28 +1146,6 @@ function Messages() {
       invitee,
       channel,
     });
-    /*const response = await fetch("http://localhost:5001/processInvite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ acceptOrDeny, owner, invitee, channel}),
-    });
-    
-    const data = await response.json();
-    if (response.ok) {
-      toast.success(data.message, {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Flip,
-        });        
-    } else {
-      alert(data.message);
-    }*/
   };
 
   //Sending invite
@@ -897,39 +1157,6 @@ function Messages() {
       loggedInUser,
       currentChannel,
     });
-    /*const response = await fetch("http://localhost:5001/sendInvite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invitedUser, loggedInUser, currentChannel }),
-    });
-    
-    const data = await response.json();
-    if (response.ok) {
-      setShowInviteModal(false)
-      toast.success(data.message, {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Flip,
-        });        
-    } else {
-      toast.error(data.message, {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Flip,
-        });
-    }*/
   };
 
   //Sending request
@@ -942,40 +1169,6 @@ function Messages() {
       loggedInUser,
       channelName,
     });
-    /*
-    const response = await fetch("http://localhost:5001/sendRequest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ owner, loggedInUser, channelName }),
-    });
-    
-    const data = await response.json();
-    if (response.ok) {
-      setShowJoinModal(false)
-      toast.success(data.message, {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Flip,
-        });        
-    } else {
-      toast.error(data.message, {
-        position: "top-center",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "dark",
-        transition: Flip,
-        });
-    }*/
   };
 
   function getChannelOwner(queryName){
@@ -1205,7 +1398,8 @@ buttons2.forEach((chan) => {
 
           <div className="space-y-4">
           <div className="bg-gray-700 rounded-lg p-4 min-h-[30rem] max-h-[35rem] overflow-y-auto">
-          <div className="space-y-4">{listOutMessages(messageList)}</div>
+          <div className="space-y-4">{listOutMessages(messageList)} {displayBattleJackCards()}
+          </div>
           <div ref={messagesEndRef} /> {                      }
           </div>
           </div>

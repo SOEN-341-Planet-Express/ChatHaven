@@ -137,6 +137,7 @@ io.on("connection", (socket) => {
 
   // Listen for incoming messages from the client
   socket.on("sendMessage", (data) => {
+    
     const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = data;
     const sql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
     
@@ -295,6 +296,72 @@ socket.on("processInvite", (data) => {
     });
   }
 });
+
+
+
+
+// Starts a battlejack game by shuffling the deck and giving out two cards to each player
+socket.on("startBattleJack", (data) => {
+  var cardDeck = ["clubs_2", "clubs_3", "clubs_4", "clubs_5", "clubs_6", "clubs_7", "clubs_8", "clubs_9", "clubs_10", "clubs_J", "clubs_Q", "clubs_K", "clubs_A",
+    "diamonds_2", "diamonds_3", "diamonds_4", "diamonds_5", "diamonds_6", "diamonds_7", "diamonds_8", "diamonds_9", "diamonds_10", "diamonds_J", "diamonds_Q", "diamonds_K", "diamonds_A",
+    "hearts_2", "hearts_3", "hearts_4", "hearts_5", "hearts_6", "hearts_7", "hearts_8", "hearts_9", "hearts_10", "hearts_J", "hearts_Q", "hearts_K", "hearts_A",
+    "spades_2", "spades_3", "spades_4", "spades_5", "spades_6", "spades_7", "spades_8", "spades_9", "spades_10", "spades_J", "spades_Q", "spades_K", "spades_A",];
+  const {loggedInUser, currentChannel} = data
+
+  for(var i = 0; i < cardDeck.length; i++){
+    var randomPlace = Math.floor(Math.random() * cardDeck.length)
+    var temp = cardDeck[i]
+    cardDeck[i] = cardDeck[randomPlace]
+    cardDeck[randomPlace] = temp
+  }
+
+  var player1 = loggedInUser
+  var player2 = currentChannel
+  var player1hand = [cardDeck.pop(), cardDeck.pop()]
+  var player2hand = [cardDeck.pop(), cardDeck.pop()]
+  var gameDeck = cardDeck
+  io.emit("startBattleJackClient", {
+    player1,
+    player2,
+    player1hand,
+    player2hand,
+    gameDeck
+  })
+})
+
+
+//Hits the player with another card
+socket.on("battlejackHit", (data) => {
+  var whoseTurn = data.whoseTurn
+  var deck = data.gameDeck
+  var newCard = deck.pop();
+  io.emit("battlejackReceiveHit", {
+    whoseTurn,
+    newCard,
+    deck,
+  })
+  
+})
+
+
+//Player stands and skips their turn
+socket.on("battlejackStand", (data) => {
+  io.emit("battlejackReceiveStand", {
+  })
+})
+
+//Detectss a gameover and notifies all players
+socket.on("gameOver", (data) => {
+  var gameEndMessage;
+  if(data.victor === "tie"){
+    gameEndMessage = "Game is tied, no one wins"
+  } else {
+    gameEndMessage = data.victor + " has won the game"
+  }
+  io.emit("receiveGameOver", {
+    message: gameEndMessage
+  })
+})
 
 });
 // --------------------- REST Endpoints --------------------- //
@@ -690,33 +757,6 @@ app.post("/deleteMessage", (req, res) => {
   });
 });
 
-
-// Send a message
-/*
-app.post("/sendMessage", (req, res) => {
-  const { messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId } = req.body;
-
-  const mysql = "INSERT INTO messages (message, sender, destination, time_sent, message_type, quoted_message_id) VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?, ?)";
-  db.query(mysql, [messageToSend, loggedInUser, currentChannel, currentChannelType, quotedMessageId || null], (err, results) => {
-    if (err) return res.status(500).json({error: "Error - not your fault :) database fault"});
-
-    
-    // Broadcast the new message to all connected clients via Socket.io
-    io.emit("receiveMessage", {
-      my_row_id: results.insertId,       // Standardized property
-      message: messageToSend,
-      sender: loggedInUser,
-      destination: currentChannel,
-      messageType: currentChannelType,
-      quoted_message_id: quotedMessageId || null,
-      timestamp: new Date().toISOString(),
-    });
-    
-
-    res.status(200).json({ message: "Message sent"})
-  });
-});*/
-
 // Forgot Password
 app.post("/forgotpassword", (req, res) => {
   const { username, password } = req.body;
@@ -734,96 +774,6 @@ app.post("/forgotpassword", (req, res) => {
     res.status(200).json({ message: "Password changed successfully!"})
   });
 });
-
-
-
-//Process invite
-/*app.post("/processInvite", (req, res) => {
-  const { acceptOrDeny, owner, invitee, channel } = req.body;
-  
-
-  const mysql = "DELETE FROM channel_invites WHERE invitee = (?) AND owner = (?) and channel = (?)";
-  db.query(mysql, [invitee, owner, channel], (err, results) => {
-  });
-
-  if(acceptOrDeny == 'accept'){
-    const mysql2 = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, ?)";
-  db.query(mysql2, [channel, invitee], (err, results) => {
-    res.status(200).json({ message: "Invite Accepted"})
-  });
-  } else {
-    res.status(200).json({ message: "Invite Denied"})
-  }
-});*/
-
-//Send invite
-/*app.post("/sendInvite", (req, res) => {
-  const { invitedUser, loggedInUser, currentChannel } = req.body;
-  if(invitedUser == loggedInUser){
-    return res.status(400).json({ message: "Cannot invite yourself" });
-  } else if(invitedUser == ""){
-    return res.status(400).json({ message: "Must enter a user to invite" });
-  } else if(currentChannel==""){
-    return res.status(400).json({ message: "Must select a channel first" });
-  }
-
-  const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
-  db.query(searchSQL, [currentChannel, invitedUser], (err, results) => {
-    if(results.length > 0){
-      return res.status(400).json({ message: "User is already in channel" });
-    } else {
-      const searchInvitesSQL = "SELECT * FROM channel_invites WHERE invitee=(?) AND owner=(?) AND channel=(?) AND type='invite'";
-      db.query(searchInvitesSQL, [invitedUser, loggedInUser, currentChannel], (err, results1) => {
-        if(results1.length > 0){
-          return res.status(400).json({ message: "User is already invited" });
-        } else {
-          const mysql = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'invite')";
-          db.query(mysql, [invitedUser, loggedInUser, currentChannel], (err, results2) => {
-            if (err) return res.status(500).json({error: "Error - not your fault :) database fault", details: err});
-            res.status(200).json({ message: "Invite Sent"})
-          });
-        }
-      });
-      
-    }
-  });
-});*/
-
-
-//Send request
-/*app.post("/sendRequest", (req, res) => {
-  const { owner, loggedInUser, channelName } = req.body;
-  
-  if(owner == loggedInUser){
-    return res.status(400).json({ message: "Cannot request to join your own channel" });
-  } else if(channelName == ""){
-    return res.status(400).json({ message: "Must enter a channel" });
-  }
-
-  const searchSQL = "SELECT * FROM channel_access WHERE channel_name=(?) AND permitted_users=(?)";
-  db.query(searchSQL, [channelName, loggedInUser], (err, results) => {
-    if(results.length > 0){
-      return res.status(400).json({ message: "You are already in this channel" });
-    } else {
-      const searchInvitesSQL = "SELECT * FROM channel_invites WHERE invitee=(?) AND owner=(?) AND channel=(?) AND type='request'";
-      db.query(searchInvitesSQL, [loggedInUser, owner, channelName], (err, results1) => {
-        if(results1.length > 0){
-          return res.status(400).json({ message: "You have already made a request to join" });
-        } else {
-          const addRequest = "INSERT INTO channel_invites (invitee, owner, channel, type) VALUES (?, ?, ?, 'request')";
-          db.query(addRequest, [loggedInUser, owner, channelName], (err, results2) => {
-            if (err) {
-              return res.status(500).json({message: "Error - not your fault :) database fault", details: err});
-            }
-            res.status(200).json({ message: "Request Sent"})
-          });
-        }
-      }); 
-    }
-  });
-});*/
-
-
 
 // Delete User
 app.post("/deleteUser", (req, res) => {
@@ -866,6 +816,7 @@ app.post("/getUserStatus", (req, res) => {
     }
   });
 });
+
 
 module.exports = app;
 
