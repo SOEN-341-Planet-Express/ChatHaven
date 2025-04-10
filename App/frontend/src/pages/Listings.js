@@ -156,9 +156,9 @@ function Listings() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => navigate("/Messages")}
-          className="text-gray-300 hover:text-white transition duration-200"
+          className="text-white"
         >
-          🄼🄴🅂🅂🄰🄶🄴
+          Messages
         </button>
 
         <button
