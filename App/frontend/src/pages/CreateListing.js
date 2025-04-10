@@ -138,7 +138,19 @@ function CreateListing() {
         </form>
 
         <div className="mt-6 text-center">
-          <button onClick={() => navigate("/listings")} className="text-gray-400 hover:text-white transition duration-200">
+          <button onClick={() => navigate("/listings")} className="text-gray-400 hover:text-white transition duration-200 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-blue-500 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                clipRule="evenodd"
+              />
+            </svg>
             Back to Marketplace
           </button>
         </div>
