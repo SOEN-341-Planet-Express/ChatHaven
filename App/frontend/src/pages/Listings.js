@@ -73,25 +73,31 @@ function Listings() {
     return items.map((listing) => (
       <div
         key={listing.id}
-        className="bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-lg transition w-full"
+        className="bg-gray-800 p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 w-full group"
       >
         {listing.author === loggedInUser && (
           <div className="text-right mb-2">
             <button 
               onClick={() => deleteListing(listing.id)}
-              className="text-red-500 hover:text-red-600"
+              className="text-red-500 hover:text-red-600 transition-colors"
             >
               ❌
             </button>
           </div>
         )}
-        <img
-          src={`http://localhost:5001/uploads/${listing.image}`}
-          alt={listing.title}
-          className="w-full h-48 object-cover rounded mb-4"
-        />
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-semibold">{listing.title}</h2>
+        <div className="relative overflow-hidden rounded-lg mb-4">
+          <img
+            src={`http://localhost:5001/uploads/${listing.image}`}
+            alt={listing.title}
+            className="w-full h-56 object-cover transform group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <p className="text-2xl font-bold text-white">${listing.price}</p>
+          </div>
+        </div>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors">{listing.title}</h2>
           {listing.author === loggedInUser ? (
             <button
               onClick={() => toggleStatus(listing.id)}
@@ -99,18 +105,21 @@ function Listings() {
                 listing.status === "sold"
                   ? "bg-green-700 hover:bg-green-800"
                   : "bg-red-700 hover:bg-red-800"
-              } text-white text-sm font-medium py-1 px-2 rounded-md transition duration-200`}
+              } text-white text-sm font-medium py-1 px-3 rounded-full transition duration-200`}
             >
               {listing.status === "sold" ? "Mark as Available" : "Sold?"}
             </button>
           ) : (
-            <span className="text-sm font-medium text-gray-400">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              listing.status === "sold" 
+                ? "bg-red-900/50 text-red-300" 
+                : "bg-green-900/50 text-green-300"
+            }`}>
               {listing.status === "sold" ? "Not Available" : "Available"}
             </span>
           )}
         </div>
-        <p className="text-gray-400 mb-2">{listing.description}</p>
-        <p className="font-bold mb-1">${listing.price}</p>
+        <p className="text-gray-400 mb-4 line-clamp-2">{listing.description}</p>
         {listing.author !== loggedInUser && (
           <button 
             onClick={() =>
@@ -121,12 +130,12 @@ function Listings() {
                 },
               })
             }
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-md transition duration-200 mt-2"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition duration-200 mt-2"
           >
             Message Seller
           </button>
         )}
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 mt-3">
           {new Date(listing.created_at).toLocaleString()}
         </p>
       </div>
@@ -157,7 +166,7 @@ function Listings() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/Messages")}
-              className="text-white"
+              className="text-white hover:text-blue-400 transition-colors"
             >
               Messages
             </button>
@@ -191,23 +200,23 @@ function Listings() {
           </div>
         </div>
 
-        <h1 className="text-3xl mb-6 text-center flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-blue-500 mr-2"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Marketplace
-        </h1>
+        <div className="flex flex-col items-center mb-8">
+          <h1 className="text-3xl mb-4 text-center flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-blue-500 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Marketplace
+          </h1>
 
-        <div className="flex justify-center mb-6">
           <button
             onClick={() => navigate("/CreateListing")}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 transform hover:scale-105"
