@@ -14,7 +14,7 @@ const dbConfig = {
   
 
 
-describe('API tests for Login actions', () => {
+describe('API tests for User actions', () => {
     let db;
 
     beforeAll(async () => {
@@ -39,7 +39,7 @@ describe('API tests for Login actions', () => {
     const sample_password = "test_password";
     const new_password = "new_password";
 
-    test('Create a new user given user credentials', async () => {
+    test('US.02 - New Account /register', async () => {
         const response = await request(app)
             .post('/register')
             .send({
@@ -51,7 +51,7 @@ describe('API tests for Login actions', () => {
         expect(response.body).toHaveProperty('message', 'Account Created');
     });
 
-    test('Login to an existing account', async() => {
+    test('US.01 - Login /login', async() => {
         
         const response = await request(app)
         .post('/login')
@@ -64,7 +64,7 @@ describe('API tests for Login actions', () => {
     expect(response.body).toHaveProperty('message', 'Login successful')
     });
 
-    test('Recover a password', async() => {
+    test('US.03 - Password Recovery /forgotpassword', async() => {
 
         const response = await request(app)
         .post('/forgotpassword')
@@ -78,5 +78,28 @@ describe('API tests for Login actions', () => {
     
     });
 
+    test('US.16 - Last Seen Timestamp /updateStatus', async() => {
+        
+        const response = await request(app)
+        .post('/updateStatus')
+        .send({
+            username: sample_username, 
+            status: 'offline'
+        });
+        
+    expect(response.status).toBe(200)
+    expect(response.body).toHaveProperty('message', 'Status updated')
+    });
+
+    test('US.15 - User Status /getUserStatus', async() => {
+        
+        const response = await request(app)
+        .post('/getUserStatus')
+        .send({
+            username: 'thekillerturkey'
+        });
+        
+    expect(response.status).toBe(200)
+    });
 });
 
