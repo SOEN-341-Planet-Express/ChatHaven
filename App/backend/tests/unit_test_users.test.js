@@ -78,6 +78,19 @@ describe('API tests for User actions', () => {
     
     });
 
+    test('US.05 - Create or Delete Channel /checkIsCreator', async() => {
+        
+        const response = await request(app)
+        .post('/checkIsCreator')
+        .send({
+            loggedInUser: sample_username, 
+            currentChannel: 'TEST3'
+        });
+        
+    expect(response.status).toBe(201)
+    expect(response.body).toHaveProperty('message', 'false')
+    });
+
     test('US.16 - Last Seen Timestamp /updateStatus', async() => {
         
         const response = await request(app)

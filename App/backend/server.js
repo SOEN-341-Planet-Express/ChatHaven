@@ -49,7 +49,7 @@ db.connect(err => {
 });
 
 
-// Create listing 
+//create listing 
 app.post("/listings", upload.single("image"), (req, res) => {
   const title = req.body.title;
   const description = req.body.description;
@@ -62,11 +62,12 @@ app.post("/listings", upload.single("image"), (req, res) => {
     if (err) {
       res.status(500).json({ message: "DB error" });
     } else {
-      res.status(201).json({ message: "Created" });
+      res.status(201).json({ message: "Created", listingId: result.insertId});
     }
   });
 });
 
+//get all listings
 app.get("/listings", (req, res) => {
   const sql = "SELECT * FROM listings ORDER BY created_at DESC"; //newest first
   db.query(sql, (err, results) => {
@@ -78,6 +79,7 @@ app.get("/listings", (req, res) => {
   });
 });
 
+//delete a listing
 app.delete("/listings/:id", (req, res) => {
   const listingId = req.params.id;
 
@@ -92,6 +94,7 @@ app.delete("/listings/:id", (req, res) => {
   });
 });
 
+//Update listing status
 app.put("/listings/:id/toggle-status", (req, res) => {
   const listingId = req.params.id;
 
