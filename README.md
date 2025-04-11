@@ -124,4 +124,14 @@ http://localhost:3000/home
     - Zachary Cohen (backend)
       
 ## Roles for Sprint 4
-To be defined.
+- Scrum Master: Ulysse Alard
+- Secretary: Yenita Aman
+- Product Owner(s): Zachary Cohen
+- Development member(s): Paria Jafarian, Elliot Vinet, Alexandre Raymond
+      
+    - Yénita Aman (backend and frontend)
+    - Alexandre Raymond (backend and frontend)
+    - Elliot Vinet (backend and frontend)
+    - Paria Jafarian (backend and frontend)
+    - Ulysse Allard (backend and frontend)
+    - Zachary Cohen (backend)
