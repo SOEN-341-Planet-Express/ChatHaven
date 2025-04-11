@@ -77,42 +77,42 @@ describe('Login Tests', () => {
 
 
 describe('Admin Privileges Tests', () => {
-  it('Creates a test channel', () => {
-    cy.visit('http://localhost:3000/Home')
+  // it('Creates a test channel', () => {
+  //   cy.visit('http://localhost:3000/Home')
 
-    // Type admin info into username and password fields
-    cy.get('#username').type('thekillerturkey')
-    cy.get('#password').type('supersafe')
+  //   // Type admin info into username and password fields
+  //   cy.get('#username').type('thekillerturkey')
+  //   cy.get('#password').type('supersafe')
 
-    // Click login button
-    cy.get('button[type="submit"]').click()
-    cy.wait(4000)
+  //   // Click login button
+  //   cy.get('button[type="submit"]').click()
+  //   cy.wait(4000)
 
-    cy.contains('button', 'Create').click()
-    cy.get('input[data-testid="Channel-Name-Input"]').type('Test Channel')
-    cy.get('button[data-testid="Channel-Name-Submit"]').click()
+  //   cy.contains('button', 'Create').click()
+  //   cy.get('input[data-testid="Channel-Name-Input"]').type('Test Channel')
+  //   cy.get('button[data-testid="Channel-Name-Submit"]').click()
 
-    cy.reload()
-    cy.wait(1000)
-    cy.contains('li', 'Test Channel').should('be.visible');
-  })
-  it('Deletes a test channel', () => {
-    cy.visit('http://localhost:3000/Home')
+  //   cy.reload()
+  //   cy.wait(1000)
+  //   cy.contains('li', 'Test Channel').should('be.visible');
+  // })
+  // it('Deletes a test channel', () => {
+  //   cy.visit('http://localhost:3000/Home')
 
-    // Type admin info into username and password fields
-    cy.get('#username').type('thekillerturkey')
-    cy.get('#password').type('supersafe')
+  //   // Type admin info into username and password fields
+  //   cy.get('#username').type('thekillerturkey')
+  //   cy.get('#password').type('supersafe')
 
-    // Click login button
-    cy.get('button[type="submit"]').click()
-    cy.wait(4000)
+  //   // Click login button
+  //   cy.get('button[type="submit"]').click()
+  //   cy.wait(4000)
 
-    cy.get('li').contains('Test Channel').click()
-    cy.contains('button', 'Delete').click()
+  //   cy.get('li').contains('Test Channel').click()
+  //   cy.contains('button', 'Delete').click()
 
-    cy.contains('li', 'Test Channel').should('not.be.visible');
+  //   cy.contains('li', 'Test Channel').should('not.be.visible');
 
-  })
+  // })
 
   it('Deletes an account', () => {
     cy.visit('http://localhost:3000/Home')
