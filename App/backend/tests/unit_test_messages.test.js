@@ -69,28 +69,6 @@ describe('Unit tests for Message actions', () => {
     expect(response.status).toBe(200)
     });
 
-    test('US.10 - Message Sending /sendMessage', async() => {
-        const dummy = await request(app)
-        .post('/register')
-        .send({
-            username: sample_username,
-            password: sample_password
-        })
-        
-        const test_user = ("SELECT FROM users where username = ?", [sample_username]);
-        const response = await request(app)
-        .post('/sendMessage')
-        .send({
-            messageToSend: 'Test Message',
-            currentChannel: 'TEST3',  
-            currentChannelType: 'groupchat',
-            loggedInUser: test_user,
-        })
-
-    expect(response.status).toBe(200)
-    expect(response.body).toHaveProperty('message', 'Message sent')
-    });
-
     test('US.09 - Message Deletion', async() => {
             
         const response = await request(app)

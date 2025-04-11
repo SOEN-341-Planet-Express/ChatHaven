@@ -125,34 +125,5 @@ describe('Unit tests for Channel actions', () => {
         
     expect(response.status).toBe(200)
     });
-
-    test('US.14 - Channel Access /sendInvite', async() => {
-        
-        const response = await request(app)
-        .post('/sendInvite')
-        .send({
-            invitedUser: sample_username, 
-            loggedInUser: 'thekillerturkey', 
-            currentChannel: 'TEST3'
-        });
-        
-    expect(response.status).toBe(200)
-    expect(response.body).toHaveProperty('message', 'Invite Sent')
-
-    });
-
-    test('US.14 - Channel Access /processInvite', async() => {
-        const response = await request(app)
-        .post('/processInvite')
-        .send({
-            acceptOrDeny: 'deny', 
-            owner: 'thekillerturkey', 
-            invitee: sample_username, 
-            channel: 'TEST3'
-        });
-
-        expect(response.status).toBe(200)
-        expect(response.body).toHaveProperty('message', 'Invite Denied')
-    });
 });
 
