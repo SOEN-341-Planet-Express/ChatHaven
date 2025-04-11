@@ -1054,22 +1054,27 @@ function Messages() {
     if(!socket) return;
 
     socket.on("battlejackReceiveStand", (data)=>{
-      
-      if(whoseTurn === "player1"){
+      if(whoseTurn === "player1" && player1 === loggedInUser){
         if(player2stands === "true"){
-          //endgame
+          
+          checkVictory("bothStands")
         } else {
           setPlayer1stands("true")
           setWhoseTurn("player2")
         }
-      } else if(whoseTurn === "player2"){
+      } else if(whoseTurn === "player2" && player2 === loggedInUser){
         if(player1stands === "true"){
-          //endgame
+          
+          checkVictory("bothStands")
         } else {
           setPlayer2stands("true")
           setWhoseTurn("player1")
         }
         
+      } else if (whoseTurn === "player1" && player1 !== loggedInUser){
+        setWhoseTurn("player2")
+      } else if (whoseTurn === "player2" && player2 !== loggedInUser){
+        setWhoseTurn("player1")
       }
 
     });
@@ -1084,7 +1089,8 @@ function Messages() {
   }, [socket, whoseTurn])
 
 function checkVictory(playerScore){
-  if(player1stands === "true" && player2stands === "true"){
+  
+  if(playerScore === "bothStands"){
     setWhoseTurn("gameover")
     if(player1handscore > player2handscore){
       socket.emit("gameOver", {
@@ -1101,9 +1107,15 @@ function checkVictory(playerScore){
     }
   }
   if(playerScore == 21){
-    socket.emit("gameOver", {
-      victor: whoseTurn
-    })
+    if(whoseTurn === "player1"){
+      socket.emit("gameOver", {
+        victor: player1
+      }) } else if(whoseTurn === "player2"){
+        socket.emit("gameOver", {
+          victor: player2
+        })
+      }
+
   } else if ( playerScore > 21) {
     if(whoseTurn === "player1"){
       socket.emit("gameOver", {
