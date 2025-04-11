@@ -44,10 +44,15 @@ jobs:
           nohup npm start > frontend.log 2>&1 &  # Run frontend in background
 
 
-      - name: Run Cypress Tests
+      - name: Run Integration Tests
         run: |
           cd App/frontend/
           npx cypress run --spec "cypress/e2e/**/*.cy.js"
+        
+      - name: Run Unit Tests
+        run: |
+          cd App/frontend/
+          npm test
 
   backend-tests:
     runs-on: ubuntu-latest
