@@ -19,3 +19,8 @@ Thumbs.db
 
 # Ignore Sprint directories
 Sprint*/
+
+# Ignore SonarQube Scanner
+.scannerwork/
+.sonar/
+.sonarcloud/

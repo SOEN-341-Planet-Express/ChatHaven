@@ -305,24 +305,24 @@ socket.on("processInvite", (data) => {
 
 // Starts a battlejack game by shuffling the deck and giving out two cards to each player
 socket.on("startBattleJack", (data) => {
-  var cardDeck = ["clubs_2", "clubs_3", "clubs_4", "clubs_5", "clubs_6", "clubs_7", "clubs_8", "clubs_9", "clubs_10", "clubs_J", "clubs_Q", "clubs_K", "clubs_A",
+  const cardDeck = ["clubs_2", "clubs_3", "clubs_4", "clubs_5", "clubs_6", "clubs_7", "clubs_8", "clubs_9", "clubs_10", "clubs_J", "clubs_Q", "clubs_K", "clubs_A",
     "diamonds_2", "diamonds_3", "diamonds_4", "diamonds_5", "diamonds_6", "diamonds_7", "diamonds_8", "diamonds_9", "diamonds_10", "diamonds_J", "diamonds_Q", "diamonds_K", "diamonds_A",
     "hearts_2", "hearts_3", "hearts_4", "hearts_5", "hearts_6", "hearts_7", "hearts_8", "hearts_9", "hearts_10", "hearts_J", "hearts_Q", "hearts_K", "hearts_A",
     "spades_2", "spades_3", "spades_4", "spades_5", "spades_6", "spades_7", "spades_8", "spades_9", "spades_10", "spades_J", "spades_Q", "spades_K", "spades_A",];
   const {loggedInUser, currentChannel} = data
 
-  for(var i = 0; i < cardDeck.length; i++){
-    var randomPlace = Math.floor(Math.random() * cardDeck.length)
-    var temp = cardDeck[i]
+  for(let i = 0; i < cardDeck.length; i++){
+    const randomPlace = Math.floor(Math.random() * cardDeck.length)
+    const temp = cardDeck[i]
     cardDeck[i] = cardDeck[randomPlace]
     cardDeck[randomPlace] = temp
   }
 
-  var player1 = loggedInUser
-  var player2 = currentChannel
-  var player1hand = [cardDeck.pop(), cardDeck.pop()]
-  var player2hand = [cardDeck.pop(), cardDeck.pop()]
-  var gameDeck = cardDeck
+  const player1 = loggedInUser
+  const player2 = currentChannel
+  const player1hand = [cardDeck.pop(), cardDeck.pop()]
+  const player2hand = [cardDeck.pop(), cardDeck.pop()]
+  const gameDeck = cardDeck
   io.emit("startBattleJackClient", {
     player1,
     player2,
@@ -335,9 +335,9 @@ socket.on("startBattleJack", (data) => {
 
 //Hits the player with another card
 socket.on("battlejackHit", (data) => {
-  var whoseTurn = data.whoseTurn
-  var deck = data.gameDeck
-  var newCard = deck.pop();
+  const whoseTurn = data.whoseTurn
+  const deck = data.gameDeck
+  const newCard = deck.pop();
   io.emit("battlejackReceiveHit", {
     whoseTurn,
     newCard,
@@ -355,7 +355,7 @@ socket.on("battlejackStand", (data) => {
 
 //Detectss a gameover and notifies all players
 socket.on("gameOver", (data) => {
-  var gameEndMessage;
+  let gameEndMessage;
   if(data.victor === "tie"){
     gameEndMessage = "Game is tied, no one wins"
   } else {
@@ -438,7 +438,7 @@ app.post("/createChannel", (req, res) => {
         const checkAdminSQL = "SELECT role FROM users WHERE username=?";
         db.query(checkAdminSQL, [loggedInUser], (err, result) => {
           if (err) return res.status(500).json({ error: "DB error" });
-          role = result[0].role;
+          let role = result[0].role;
           if(role ==="admin"){
             const addPermissionSQL = "INSERT INTO channel_access (channel_name, permitted_users) VALUES (?, 'ALLUSERS')";
             db.query(addPermissionSQL, [channelName], (err, result) => {
@@ -582,10 +582,10 @@ app.post("/getChannels", (req, res) => {
     if (err) return res.status(500).json({ error: "DB error" });
     
     //Check if user is admin before passing list of channels
-    var role;
-    var generalList = []
-    var userList = [] 
-    var discoverList = []
+    let role;
+    let generalList = []
+    let userList = [] 
+    let discoverList = []
     const checkAdminSQL = "SELECT role FROM users WHERE username=?";
     db.query(checkAdminSQL, [user], (err, result) => {
       if (err) return res.status(500).json({ error: "DB error" });
@@ -594,7 +594,7 @@ app.post("/getChannels", (req, res) => {
         for(let i = 0; i < results.length; i++){
           generalList[i] = results[i]
           }
-          var allChannels = [generalList, [], []]
+          let allChannels = [generalList, [], []]
           res.status(201).json({ message:allChannels });
         } else {
           const checkGeneralChannelSQL = "SELECT * FROM channel_access WHERE permitted_users='ALLUSERS'";
@@ -609,12 +609,12 @@ app.post("/getChannels", (req, res) => {
                   return res.status(500).json({ error: "DB error" });
                 } else {
                   userList = result1
-                  var tempCombined = generalList.concat(userList)
-                  var nameCombined = []
-                  for(var i = 0; i < tempCombined.length;i++){
+                  let tempCombined = generalList.concat(userList)
+                  let nameCombined = []
+                  for(let i = 0; i < tempCombined.length;i++){
                     nameCombined[i] = tempCombined[i].channel_name
                   }
-                  var tracker = 0;
+                  let tracker = 0;
                   
                   for(let i = 0; i < results.length; i++){
                     if(!nameCombined.includes(results[i].channel_name)){
@@ -623,7 +623,7 @@ app.post("/getChannels", (req, res) => {
                     }
                   }
           
-                  var allChannels = [generalList, userList, discoverList]
+                  let allChannels = [generalList, userList, discoverList]
                   
                   res.status(201).json({ message:allChannels });
                 }
