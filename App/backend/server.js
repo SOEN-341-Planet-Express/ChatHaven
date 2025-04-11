@@ -691,7 +691,7 @@ app.post("/getSentInvites", (req, res) => {
   
   db.query(getRequestSQL, [user], (err, results) => {
     if (err) return res.status(500).json({ error: "DB error" });
-    
+    console.log(user)
     res.status(200).json({ message: results });
   });
 });

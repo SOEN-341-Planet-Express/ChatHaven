@@ -249,13 +249,13 @@ function Messages() {
 
 
   useEffect(() => {
-
+    const user = localStorage.getItem("loggedInUser");
     //Load requests sent to channel creator
     async function getSentRequests() {
       const response = await fetch("http://localhost:5001/getSentRequests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loggedInUser }),
+        body: JSON.stringify({ user }),
       });
 
       const data = await response.json();
@@ -271,7 +271,7 @@ function Messages() {
       const response = await fetch("http://localhost:5001/getReceivedRequests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loggedInUser }),
+        body: JSON.stringify({ user }),
       });
 
       const data = await response.json();
@@ -287,7 +287,7 @@ function Messages() {
       const response = await fetch("http://localhost:5001/getSentInvites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loggedInUser }),
+        body: JSON.stringify({ user }),
       });
 
       const data = await response.json();
@@ -303,7 +303,7 @@ function Messages() {
       const response = await fetch("http://localhost:5001/getReceivedInvites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ loggedInUser }),
+        body: JSON.stringify({ user }),
       });
 
       const data = await response.json();
@@ -322,7 +322,12 @@ function Messages() {
       getReceivedRequests();
       getSentRequests();
     });
-    return () => socket.off("receiveProcess");
+
+    
+    getReceivedInvites();
+    getSentInvites();
+    getReceivedRequests();
+    getSentRequests();
   }, [socket, loggedInUser]);
 
   // Listen for deleteMessage event from the server
