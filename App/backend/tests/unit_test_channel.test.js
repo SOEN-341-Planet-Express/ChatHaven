@@ -65,18 +65,12 @@ describe('Unit tests for Channel actions', () => {
     });
 
     test('US.07 - Channel Navigation /getChannels, ', async() => {
-        const dummy = await request(app)
-        .post('/register')
-        .send({
-            username: sample_username,
-            password: sample_password
-        })
         
         const test_user = ("SELECT FROM users where username = ?", [sample_username]);
         const response = await request(app)
         .post('/getChannels')
         .send({
-            user: test_user,
+            user: 'thekillerturkey',
         })
 
     expect(response.status).toBe(201)
